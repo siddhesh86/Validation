@@ -2,6 +2,9 @@
 
 void draw_rates()
 {
+  bool includeHW = false;
+  int rebinFactor = 1;
+
   setTDRStyle();
   gROOT->ForceStyle();
 
@@ -34,13 +37,23 @@ void draw_rates()
     rateHists_def[rateType] = dynamic_cast<TH1F*>(files.at(0)->Get(histName.c_str()));
     rateHists_hw[rateType] = dynamic_cast<TH1F*>(files.at(0)->Get(histNameHw.c_str()));
     rateHists_new_cond[rateType] = dynamic_cast<TH1F*>(files.at(1)->Get(histName.c_str())); 
+    rateHists_def[rateType]->Rebin(rebinFactor);
+    rateHists_hw[rateType]->Rebin(rebinFactor);
+    rateHists_new_cond[rateType]->Rebin(rebinFactor);
+
     rateHists_def[rateType]->SetLineColor(histColor[rateType]);
     rateHists_hw[rateType]->SetLineColor(histColor[rateType]);
     rateHists_new_cond[rateType]->SetLineColor(histColor[rateType]);
     TString name(rateHists_new_cond[rateType]->GetName());
     name += "_ratio";
-    rateHistsRatio[rateType] = dynamic_cast<TH1F*>(rateHists_new_cond[rateType]->Clone(name));
-    rateHistsRatio[rateType]->Divide(rateHists_def[rateType]);
+    if(includeHW) {
+      rateHistsRatio[rateType] = dynamic_cast<TH1F*>(rateHists_def[rateType]->Clone(name));
+      rateHistsRatio[rateType]->Divide(rateHists_hw[rateType]);
+    }
+    else {
+      rateHistsRatio[rateType] = dynamic_cast<TH1F*>(rateHists_new_cond[rateType]->Clone(name));
+      rateHistsRatio[rateType]->Divide(rateHists_def[rateType]);
+    }
     rateHistsRatio[rateType]->SetMinimum(0.6);    
     rateHistsRatio[rateType]->SetMaximum(1.4);    
     rateHistsRatio[rateType]->SetLineWidth(2);    
@@ -83,12 +96,12 @@ void draw_rates()
     TLegend *leg = new TLegend(0.55, 0.9 - 0.1*iplot.second.size(), 0.95, 0.93);
     for(auto hist : iplot.second) {
       rateHists_def[hist]->Draw("hist same");
-      rateHists_hw[hist]->Draw("hist same");
+      if(includeHW) rateHists_hw[hist]->Draw("hist same");
       rateHists_new_cond[hist]->Draw("hist same");
       TString name(rateHists_def[hist]->GetName());
       TString nameHw(rateHists_hw[hist]->GetName());
-      leg->AddEntry(rateHists_def[hist], name + " (current)", "L"); 
-      leg->AddEntry(rateHists_hw[hist], name + " (hw)", "L"); 
+      leg->AddEntry(rateHists_def[hist], name + " (current)", "L");
+      if(includeHW) leg->AddEntry(rateHists_hw[hist], name + " (hw)", "L");
       leg->AddEntry(rateHists_new_cond[hist], name + " (new)", "L"); 
     }
     leg->SetBorderSize(0);
@@ -96,11 +109,13 @@ void draw_rates()
     
     pad2.back()->cd();
     rateHistsRatio[iplot.second.front()]->Draw("hist");
-    rateHistsRatio[iplot.second.front()]->GetYaxis()->SetTitle("New/Current");
+    if(includeHW) rateHistsRatio[iplot.second.front()]->GetYaxis()->SetTitle("Current/HW");
+    else rateHistsRatio[iplot.second.front()]->GetYaxis()->SetTitle("New/Current");
     for(auto hist : iplot.second) {
       rateHistsRatio[hist]->Draw("hist same");
     }
 
-    canvases.back()->Print(Form("plots/%sRates_emu.pdf", iplot.first.c_str()));
+    if(includeHW) canvases.back()->Print(Form("plots/%sRates_hw.pdf", iplot.first.c_str()));
+    else canvases.back()->Print(Form("plots/%sRates_emu.pdf", iplot.first.c_str()));
   }
 }
