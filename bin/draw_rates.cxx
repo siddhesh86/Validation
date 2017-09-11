@@ -1,7 +1,19 @@
-#include "/uscms/homes/c/cawest/tdrstyle.C"
+#include "PhysicsTools/Utilities/macros/setTDRStyle.C"
 
-void draw_rates()
+#include "TCanvas.h"
+#include "TH1.h"
+#include "TFile.h"
+#include "TLegend.h"
+#include "TROOT.h"
+
+#include <map>
+#include <string>
+#include <vector>
+
+
+int main()
 {
+  // include comparisons between HW and data TPs
   bool includeHW = false;
   int rebinFactor = 1;
 
@@ -118,4 +130,6 @@ void draw_rates()
     if(includeHW) canvases.back()->Print(Form("plots/%sRates_hw.pdf", iplot.first.c_str()));
     else canvases.back()->Print(Form("plots/%sRates_emu.pdf", iplot.first.c_str()));
   }
+
+  return 0;
 }
