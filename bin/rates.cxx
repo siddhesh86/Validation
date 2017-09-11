@@ -1,3 +1,5 @@
+// Script for calculating rate histograms
+// Originally from Aaron Bundock
 #include "TMath.h"
 #include "TFile.h"
 #include "TTree.h"
@@ -15,43 +17,61 @@
 /* TODO: put errors in rates...
 creates the the rates and distributions for l1 trigger objects
 How to use:
-1. select HW, emu, or both for the analysis (~lines 27,28)
-2. input the number of bunches in the run (~line 35)
-3. input the instantaneous luminosity of the run (~line 36) [only if we scale to 2016 nominal]
-4. change the outputFilename (~line 39) ***runNumber, triggerType, version, hw/emu/both, rescaleORnot***
-5. set the .root inputFile string (~line 47)
-   ...path2Ntuples.txt should hold most useful paths
-6. select whether you rescale to L=1.5e34 (~line560??...) generally have it setup to rescale
-nb: for 2&3 I have provided the info in runInfoForRates.txt
-AT LINE210 PUT IN YOUR LUMISECTION CRITERIA!!! */
+1. input the number of bunches in the run (~line 35)
+2. change the variables "newConditionsNtuples" and "oldConditionsNtuples" to ntuple paths
+3. If good run JSON is not applied during ntuple production, modify isGoodLumiSection()
 
-void rates(){
+Optionally, if you want to rescale to a given instantaneous luminosity:
+1. input the instantaneous luminosity of the run (~line 32) [only if we scale to 2016 nominal]
+2. select whether you rescale to L=1.5e34 (~line606??...) generally have it setup to rescale
+nb: for 2&3 I have provided the info in runInfoForRates.txt
+*/
+
+// configurable parameters
+double numBunch = 1537; //the number of bunches colliding for the run of interest
+double runLum = 0.02; // 0.44: 275783  0.58:  276363 //luminosity of the run of interest (*10^34)
+double expectedLum = 1.15; //expected luminostiy of 2016 runs (*10^34)
+
+void rates(bool newConditions, const std::string& inputFileDirectory);
+
+int main()
+{
+  const std::string newConditionsNtuples("");
+  const std::string oldConditionsNtuples("");
+
+  // run first with newConditions=true, then newConditions=false
+  rates(true, newConditionsNtuples);
+  rates(false, oldConditionsNtuples);
+
+  return 0;
+}
+
+// only need to edit this section if good run JSON
+// is not used during ntuple production
+bool isGoodLumiSection(int lumiBlock)
+{
+  if (lumiBlock >= 1
+      || lumiBlock <= 10000) {
+    return true;
+  }
+
+  return false;
+}
+
+void rates(bool newConditions, const std::string& inputFileDirectory){
   
-  bool newConditions = false; // override with new conditions?
   bool hwOn = true;   //are we using data from hardware? (upgrade trigger had to be running!!!)
   bool emuOn = true;  //are we using data from emulator?
 
   if (hwOn==false && emuOn==false){
-    cout << "exiting as neither hardware or emulator selected" << endl;
+    std::cout << "exiting as neither hardware or emulator selected" << std::endl;
     return;
   }
 
-  //  double numBunch = 2208; //the number of bunches colliding for the run of interest
-  double numBunch = 1537; //the number of bunches colliding for the run of interest
-  double runLum = 0.02; // 0.44: 275783  0.58:  276363 //luminosity of the run of interest (*10^34)
-  double expectedLum = 1.15; //expected luminostiy of 2016 runs (*10^34)
-
-  // first try; used for initial presentation
-  // string inputFile01 = "root://eoscms.cern.ch//eos/cms/store/user/cawest/ZeroBias/zbHcal301694_def/170828_184719/L1Ntuple_sum.root";
-  // if(newConditions) inputFile01 = "root://eoscms.cern.ch//eos/cms/store/user/cawest/ZeroBias/zbHcal301694_new_cond/170829_222634/L1Ntuple_sum.root";//run275783_HCAL_TP_new.root";
-  // second try; second presentation
-  string inputFile01 = "root://eoscms.cern.ch//eos/cms/store/user/cawest/ZeroBias/zbHcal302040_def/170901_170939/0000/L1Ntuple_*.root";
-  if(newConditions) inputFile01 = "root://eoscms.cern.ch//eos/cms/store/user/cawest/ZeroBias/zbHcal302040_new_cond/170901_170837/0000/L1Ntuple_*.root";//run275783_HCAL_TP_new.root";
-  // new run with similar PU to previous investigation
-
-
-  string outputDirectory = "emu";  //***runNumber, triggerType, version, hw/emu/both***MAKE SURE IT EXISTS
-  string outputFilename = "rates_def.root";//run275783_HCAL_TP_new_rates.root";
+  std::string inputFile(inputFileDirectory);
+  inputFile += "/L1Ntuple_*.root";
+  std::string outputDirectory = "emu";  //***runNumber, triggerType, version, hw/emu/both***MAKE SURE IT EXISTS
+  std::string outputFilename = "rates_def.root";
   if(newConditions) outputFilename = "rates_new_cond.root";
   TFile* kk = TFile::Open( outputFilename.c_str() , "recreate");
   // if (kk!=0){
@@ -61,51 +81,33 @@ void rates(){
 
 
   // make trees
-  cout << "Loading up the TChain..." << endl;
+  std::cout << "Loading up the TChain..." << std::endl;
   TChain * treeL1emu = new TChain("l1UpgradeEmuTree/L1UpgradeTree");
   if (emuOn){
-    treeL1emu->Add(inputFile01.c_str());
-    // treeL1emu->Add(inputFile02.c_str());
-    // treeL1emu->Add(inputFile03.c_str());
-    // treeL1emu->Add(inputFile04.c_str());
+    treeL1emu->Add(inputFile.c_str());
   }
   TChain * treeL1hw = new TChain("l1UpgradeTree/L1UpgradeTree");
   if (hwOn){
-    treeL1hw->Add(inputFile01.c_str());
-    // treeL1emu->Add(inputFile02.c_str());
-    // treeL1emu->Add(inputFile03.c_str());
-    // treeL1emu->Add(inputFile04.c_str());  
+    treeL1hw->Add(inputFile.c_str());
   }
   TChain * eventTree = new TChain("l1EventTree/L1EventTree");
-  eventTree->Add(inputFile01.c_str()); 
-  // eventTree->Add(inputFile02.c_str());
-  // eventTree->Add(inputFile03.c_str());
-  // eventTree->Add(inputFile04.c_str());
+  eventTree->Add(inputFile.c_str());
 
   // In case you want to include PU info
   // TChain * vtxTree = new TChain("l1RecoTree/RecoTree");
   // if(binByPileUp){
-  //   vtxTree->Add(inputFile01.c_str());
-  //   // vtxTree->Add(inputFile02.c_str());
-  //   // vtxTree->Add(inputFile03.c_str());
-  //   // vtxTree->Add(inputFile04.c_str());
+  //   vtxTree->Add(inputFile.c_str());
   // }
 
 
   TChain * treeL1TPemu = new TChain("l1CaloTowerEmuTree/L1CaloTowerTree");
   if (emuOn){
-    treeL1TPemu->Add(inputFile01.c_str());
-    // treeL1emu->Add(inputFile02.c_str());
-    // treeL1emu->Add(inputFile03.c_str());
-    // treeL1emu->Add(inputFile04.c_str());
+    treeL1TPemu->Add(inputFile.c_str());
   }
 
   TChain * treeL1TPhw = new TChain("l1CaloTowerTree/L1CaloTowerTree");
   if (hwOn){
-    treeL1TPhw->Add(inputFile01.c_str());
-    // treeL1emu->Add(inputFile02.c_str());
-    // treeL1emu->Add(inputFile03.c_str());
-    // treeL1emu->Add(inputFile04.c_str());
+    treeL1TPhw->Add(inputFile.c_str());
   }
 
   L1Analysis::L1AnalysisL1UpgradeDataFormat    *l1emu_ = new L1Analysis::L1AnalysisL1UpgradeDataFormat();
@@ -129,11 +131,11 @@ void rates(){
   else nentries = treeL1hw->GetEntries();
   int goodLumiEventCount = 0;
 
-  string outputTxtFilename = "output_rates/" + outputDirectory + "/extraInfo.txt";
-  ofstream myfile; // save info about the run, including rates for a given lumi section, and number of events we used.
+  std::string outputTxtFilename = "output_rates/" + outputDirectory + "/extraInfo.txt";
+  std::ofstream myfile; // save info about the run, including rates for a given lumi section, and number of events we used.
   myfile.open(outputTxtFilename.c_str());
   eventTree->GetEntry(0);
-  myfile << "run number = " << event_->run << endl;
+  myfile << "run number = " << event_->run << std::endl;
 
   // set parameters for histograms
   // jet bins
@@ -188,12 +190,9 @@ void rates(){
   int nTpBins = 100;
   float tpLo = 0.;
   float tpHi = 100.;
-  float tpBinWidth = (tpHi-tpLo)/nTpBins;
-  
 
-
-  string axR = ";Threshold E_{T} (GeV);rate (Hz)";
-  string axD = ";E_{T} (GeV);events/bin";
+  std::string axR = ";Threshold E_{T} (GeV);rate (Hz)";
+  std::string axD = ";E_{T} (GeV);events/bin";
 
   //make histos
   TH1F* singleJetRates_emu = new TH1F("singleJetRates_emu", axR.c_str(), nJetBins, jetLo, jetHi);
@@ -247,12 +246,8 @@ void rates(){
 
     //lumi break clause
     eventTree->GetEntry(jentry);
-    if (event_->lumi < 1
-	|| event_->lumi > 167) {
-      //skip the corresponding event
-      continue;
-    }
-
+    //skip the corresponding event
+    if (!isGoodLumiSection(event_->lumi)) continue;
     goodLumiEventCount++;
 
     //do routine for L1 emulator quantites
@@ -606,7 +601,7 @@ void rates(){
 
   //  TFile g( outputFilename.c_str() , "new");
   kk->cd();
-  // normalisation factor for rate histograms (11kHz in the orbit frequency)
+  // normalisation factor for rate histograms (11kHz is the orbit frequency)
   double norm = 11246*(numBunch/goodLumiEventCount); // no lumi rescale
   //  double norm = 11246*(numBunch/goodLumiEventCount)*(expectedLum/runLum); //scale to nominal lumi
 
@@ -693,11 +688,11 @@ void rates(){
     metSumRates_hw->Write();
     metHFSumRates_hw->Write();
   }
-  myfile << "using the following ntuple: " << inputFile01 << endl;
-  myfile << "number of colliding bunches = " << numBunch << endl;
-  myfile << "run luminosity = " << runLum << endl;
-  myfile << "expected luminosity = " << expectedLum << endl; 
-  myfile << "norm factor used = " << norm << endl;
-  myfile << "number of good events = " << goodLumiEventCount << endl;
+  myfile << "using the following ntuple: " << inputFile << std::endl;
+  myfile << "number of colliding bunches = " << numBunch << std::endl;
+  myfile << "run luminosity = " << runLum << std::endl;
+  myfile << "expected luminosity = " << expectedLum << std::endl;
+  myfile << "norm factor used = " << norm << std::endl;
+  myfile << "number of good events = " << goodLumiEventCount << std::endl;
   myfile.close(); 
 }//closes the function 'rates'

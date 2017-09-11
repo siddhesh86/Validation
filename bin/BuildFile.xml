@@ -1,0 +1,6 @@
+<use name="root"/>
+<use name="rootinteractive"/>
+<environment>
+  <bin file="rates.cxx" name="rates.exe"/>
+</environment>
+<flags CXXFLAGS="-Wall -Werror -g"/>

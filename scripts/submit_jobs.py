@@ -32,7 +32,9 @@ def generate_ntuple_config(configtype, newtag):
     cmd = 'cmsDriver.py l1Ntuple -s RAW2DIGI '
     cmd += '--python_filename=ntuple_maker_' + configtype + '.py '
     # number of events; overridden by CRAB
-    cmd += "-n 10 "
+    cmd += '-n 10 '
+    # suppresses the (unneeded) the RAW2DIGI output
+    cmd += '--no_output '
     # should always be set to Run2_2017 for 2017 data
     cmd += '--era=' + ERA +  ' '
     # validations are always run on data, not MC
@@ -56,6 +58,9 @@ def generate_ntuple_config(configtype, newtag):
     return cmd
 
 PARSER = argparse.ArgumentParser()
+# existing GT
+PARSER.add_argument('-g', '--globaltag')
+# new L1TriggerObjects tag
 PARSER.add_argument('-t', '--newtag', required=True)
 PARSER.add_argument('-l', '--lumimask', required=True)
 PARSER.add_argument('-d', '--dataset', required=True)
@@ -69,6 +74,8 @@ check_setup()
 FILE = file(ARGS.lumimask)
 GOOD_RUN_STRING = FILE.read()
 GOOD_RUN_DATA = json.loads(GOOD_RUN_STRING)
+if(ARGS.globaltag):
+    CONDITIONS = ARGS.globaltag
 if len(GOOD_RUN_DATA) != 1:
     sys.exit("Only running on a single run at a time is supported.")
 RUN = GOOD_RUN_DATA.keys()[0]
