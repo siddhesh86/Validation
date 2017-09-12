@@ -30,18 +30,33 @@ nb: for 2&3 I have provided the info in runInfoForRates.txt
 // configurable parameters
 double numBunch = 1537; //the number of bunches colliding for the run of interest
 double runLum = 0.02; // 0.44: 275783  0.58:  276363 //luminosity of the run of interest (*10^34)
-double expectedLum = 1.15; //expected luminostiy of 2016 runs (*10^34)
+double expectedLum = 1.15; //expected luminosity of 2016 runs (*10^34)
 
 void rates(bool newConditions, const std::string& inputFileDirectory);
 
-int main()
+int main(int argc, char *argv[])
 {
-  const std::string newConditionsNtuples("");
-  const std::string oldConditionsNtuples("");
+  bool newConditions = true;
+  std::string ntuplePath("");
 
-  // run first with newConditions=true, then newConditions=false
-  rates(true, newConditionsNtuples);
-  rates(false, oldConditionsNtuples);
+  if (argc != 3) {
+    std::cout << "Usage: rates.exe [new/def] [path to ntuples]\n"
+	      << "[new/def] indicates new or default (existing) conditions" << std::endl;
+    exit(1);
+  }
+  else {
+    std::string par1(argv[1]);
+    std::transform(par1.begin(), par1.end(), par1.begin(), ::tolower);
+    if(par1.compare("new") == 0) newConditions = true;
+    else if(par1.compare("def") == 0) newConditions = false;
+    else {
+      std::cout << "First parameter must be \"new\" or \"def\"" << std::endl;
+      exit(1);
+    }
+    ntuplePath = argv[2];
+  }
+
+  rates(newConditions, ntuplePath);
 
   return 0;
 }
