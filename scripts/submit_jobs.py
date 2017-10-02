@@ -12,7 +12,7 @@ ERA = 'Run2_2017'
 # current data global tag
 CONDITIONS = '92X_dataRun2_HLT_v7'
 # L1 calibrations; needs to be updated when L1 calibrations change
-CALOSTAGE2PARAMS = '2017_v1_8_2_updateHFSF_v6MET'
+CALOSTAGE2PARAMS = '2017_v1_8_2_updateHFSF_v7MET'
 # dummy value needed so that cmsDriver.py will
 # assume that there is an input file
 DEFAULTINPUT = '/store/express/Run2017B/ExpressPhysics/FEVT/Express-v1/000/297/562/00000/EE1F5F26-145B-E711-A146-02163E019C23.root'
