@@ -23,7 +23,7 @@ int main()
   gROOT->ForceStyle();
 
   // default, then new conditions
-  std::vector<std::string> filenames = {"l1analysis_def.root", "l1analysis_linear_luts.root"};
+  std::vector<std::string> filenames = {"l1analysis_def.root", "l1analysis_new_cond.root"};
   std::vector<std::string> l1Types = {"singleJet", "doubleJet", "tripleJet", "quadJet",
 					"htSum", "etSum", "metSum", "metHFSum"};
   
