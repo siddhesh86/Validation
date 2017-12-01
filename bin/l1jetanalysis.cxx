@@ -2,8 +2,10 @@
 #include "TMath.h"
 #include "TFile.h"
 #include "TTree.h"
+#include "TH1D.h"
 #include "TH1F.h"
 #include "TH2F.h"
+#include "TH3F.h"
 #include "TChain.h"
 #include <iostream>
 #include <fstream>
@@ -106,7 +108,7 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
   inputFile += "/L1Ntuple_*.root";
   std::string outputDirectory = "emu";  //***runNumber, triggerType, version, hw/emu/both***MAKE SURE IT EXISTS
   std::string outputFilename = "l1analysis_def.root";
-  if(newConditions) outputFilename = "l1analysis_linear_luts.root";
+  if(newConditions) outputFilename = "l1analysis_new_cond.root";
   TFile* kk = TFile::Open( outputFilename.c_str() , "recreate");
   // if (kk!=0){
   //   cout << "TERMINATE: not going to overwrite file " << outputFilename << endl;
@@ -253,7 +255,43 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
   // resolution histograms
   TH2F *hresJet = new TH2F("hresJet","",nJetBins, jetLo, jetHi,100,-5,5);
   TH2F *hresMET = new TH2F("hResMET","",nMetSumBins,metSumLo,metSumHi,100,-5,5);
+
+  TH3F *hresJet3 = new TH3F("hresJet_3","",nJetBins,jetLo,jetHi,nJetBins,jetLo, jetHi,100,-5,5);
+  TH3F *hresMET3 = new TH3F("hresMET_3","",nMetSumBins,metSumLo,metSumHi,nMetSumBins,metSumLo,metSumHi,100,-5,5);
+
+  TH2F *hresJet_hb = new TH2F("hresJet_hb","",nJetBins, jetLo, jetHi,100,-5,5);
+  TH2F *hresJet_he = new TH2F("hresJet_he","",nJetBins, jetLo, jetHi,100,-5,5);
+  TH2F *hresJet_hf = new TH2F("hresJet_hf","",nJetBins, jetLo, jetHi,100,-5,5);
   
+  TH2F *hresJet_inv = new TH2F("hresJet_inv","",nJetBins, jetLo, jetHi,100,-5,5);
+  TH2F *hresMET_inv = new TH2F("hResMET_inv","",nMetSumBins,metSumLo,metSumHi,100,-5,5);
+
+  TH2F *hresJet_hb_inv = new TH2F("hresJet_hb_inv","",nJetBins, jetLo, jetHi,100,-5,5);
+  TH2F *hresJet_he_inv = new TH2F("hresJet_he_inv","",nJetBins, jetLo, jetHi,100,-5,5);
+  TH2F *hresJet_hf_inv = new TH2F("hresJet_hf_inv","",nJetBins, jetLo, jetHi,100,-5,5);
+  
+  TH1F *h_resMET1 = new TH1F("hresMET1","",100,-5,5) ;
+  TH1F *h_resMET2 = new TH1F("hresMET2","",100,-5,5) ;
+  TH1F *h_resMET3 = new TH1F("hresMET3","",100,-5,5) ;
+  TH1F *h_resMET4 = new TH1F("hresMET4","",100,-5,5) ;
+  TH1F *h_resMET5 = new TH1F("hresMET5","",100,-5,5) ;
+  TH1F *h_resMET6 = new TH1F("hresMET6","",100,-5,5) ;
+  TH1F *h_resMET7 = new TH1F("hresMET7","",100,-5,5) ;
+  TH1F *h_resMET8 = new TH1F("hresMET8","",100,-5,5) ;
+  TH1F *h_resMET9 = new TH1F("hresMET9","",100,-5,5) ;
+  TH1F *h_resMET10 = new TH1F("hresMET10","",100,-5,5) ;
+  
+  TH1F *h_resJet1 = new TH1F("hresJet1","",100,-5,5) ;
+  TH1F *h_resJet2 = new TH1F("hresJet2","",100,-5,5) ;
+  TH1F *h_resJet3 = new TH1F("hresJet3","",100,-5,5) ;
+  TH1F *h_resJet4 = new TH1F("hresJet4","",100,-5,5) ;
+  TH1F *h_resJet5 = new TH1F("hresJet5","",100,-5,5) ;
+  TH1F *h_resJet6 = new TH1F("hresJet6","",100,-5,5) ;
+  TH1F *h_resJet7 = new TH1F("hresJet7","",100,-5,5) ;
+  TH1F *h_resJet8 = new TH1F("hresJet8","",100,-5,5) ;
+  TH1F *h_resJet9 = new TH1F("hresJet9","",100,-5,5) ;
+  TH1F *h_resJet10 = new TH1F("hresJet10","",100,-5,5) ;
+    
   // hcal/ecal TPs
   TH1F* hcalTP_emu = new TH1F("hcalTP_emu", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
   TH1F* ecalTP_emu = new TH1F("ecalTP_emu", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
@@ -355,6 +393,20 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
 	// met resolution
 	float resMET = (metSum-rMET)/rMET;
 	hresMET->Fill(rMET, resMET);
+	hresMET_inv->Fill(metSum, resMET);
+
+	hresMET3->Fill(rMET,metSum,resMET);
+	
+	if (rMET<20.) h_resMET1->Fill(resMET);
+	if (rMET>=20. && rMET<40.) h_resMET2->Fill(resMET);
+	if (rMET>=40. && rMET<60.) h_resMET3->Fill(resMET);
+	if (rMET>=60. && rMET<80.) h_resMET4->Fill(resMET);
+	if (rMET>=80. && rMET<100.) h_resMET5->Fill(resMET);
+	if (rMET>=100. && rMET<120.) h_resMET6->Fill(resMET);
+	if (rMET>=120. && rMET<140.) h_resMET7->Fill(resMET);
+	if (rMET>=140. && rMET<180.) h_resMET8->Fill(resMET);
+	if (rMET>=180. && rMET<250.) h_resMET9->Fill(resMET);
+	if (rMET>=250. && rMET<500.) h_resMET10->Fill(resMET);
 	
 	// leading offline jet
 	double maxEn(0.);
@@ -375,10 +427,13 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
 	  // return Matched L1 jet
 	  int l1jetIdx(-1);
 	  double minDR = 999.;
+	  double dptmin=1000.;
 	  for (unsigned int i=0; i<l1emu_->nJets; i++) {
 	    double dR=deltaR(jet_->eta[jetIdx], jet_->phi[jetIdx],l1emu_->jetEta[i],l1emu_->jetPhi[i]);
-	    if (dR<minDR) {
+	    double dpt=fabs( (l1emu_->jetEt[i]-jet_->etCorr[jetIdx])/jet_->etCorr[jetIdx] );
+	    if (dR<minDR && dpt<dptmin) {
 	      minDR=dR;
+	      dptmin=dpt;
 	      if (minDR<0.5) l1jetIdx=i;
 	    }
 	  }
@@ -393,8 +448,34 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
 	    if (l1emu_->jetEt[l1jetIdx]>112.) jetET112->Fill(jet_->etCorr[jetIdx]);
 	    if (l1emu_->jetEt[l1jetIdx]>180.) jetET180->Fill(jet_->etCorr[jetIdx]);
 
-	    double resJet=(l1emu_->jetEt[l1jetIdx]-jet_->etCorr[jetIdx])/jet_->etCorr[jetIdx];
+	    float resJet=(l1emu_->jetEt[l1jetIdx]-jet_->etCorr[jetIdx])/jet_->etCorr[jetIdx];
 	    hresJet->Fill(jet_->etCorr[jetIdx],resJet);
+	    hresJet_inv->Fill(l1emu_->jetEt[l1jetIdx],resJet);
+
+	    hresJet3->Fill(jet_->etCorr[jetIdx],l1emu_->jetEt[l1jetIdx],resJet);
+
+	    if (fabs(l1emu_->jetEta[l1jetIdx])<=1.305) {
+	      hresJet_hb->Fill(jet_->etCorr[jetIdx],resJet);
+	      hresJet_hb_inv->Fill(l1emu_->jetEt[l1jetIdx],resJet);
+	    } else if (fabs(l1emu_->jetEta[l1jetIdx])<=3.0) {
+	      hresJet_he->Fill(jet_->etCorr[jetIdx],resJet);
+	      hresJet_he_inv->Fill(l1emu_->jetEt[l1jetIdx],resJet);
+	    } else {
+	      hresJet_hf->Fill(jet_->etCorr[jetIdx],resJet);
+	      hresJet_hf_inv->Fill(l1emu_->jetEt[l1jetIdx],resJet);
+	    }
+	      
+	    if (jet_->etCorr[jetIdx]<50.) h_resJet1->Fill(resJet);
+	    if (jet_->etCorr[jetIdx]>=50. && jet_->etCorr[jetIdx]<100.) h_resJet2->Fill(resJet);
+	    if (jet_->etCorr[jetIdx]>=100. && jet_->etCorr[jetIdx]<150.) h_resJet3->Fill(resJet);
+	    if (jet_->etCorr[jetIdx]>=150. && jet_->etCorr[jetIdx]<200.) h_resJet4->Fill(resJet);
+	    if (jet_->etCorr[jetIdx]>=200. && jet_->etCorr[jetIdx]<250.) h_resJet5->Fill(resJet);
+	    if (jet_->etCorr[jetIdx]>=250. && jet_->etCorr[jetIdx]<300.) h_resJet6->Fill(resJet);
+	    if (jet_->etCorr[jetIdx]>=300. && jet_->etCorr[jetIdx]<350.) h_resJet7->Fill(resJet);
+	    if (jet_->etCorr[jetIdx]>=350. && jet_->etCorr[jetIdx]<400.) h_resJet8->Fill(resJet);
+	    if (jet_->etCorr[jetIdx]>=400. && jet_->etCorr[jetIdx]<450.) h_resJet9->Fill(resJet);
+	    if (jet_->etCorr[jetIdx]>=450. && jet_->etCorr[jetIdx]<500.) h_resJet10->Fill(resJet);
+	
 	    
 	  } // close 'found matched l1jet'
 	} // close 'at least one offline jet'
@@ -419,13 +500,22 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
     // l1 quantities
     l1jetET1->Write(); l1jetET2->Write(); l1jetET3->Write(); l1jetET4->Write();
     l1ET->Write(); l1MET->Write(); l1METHF->Write(); l1HT->Write(); l1MHT->Write();
-    // efficiencies
-    refJetET->Write(); refmJetET->Write();
-    jetET50->Write(); jetET64->Write(); jetET76->Write(); jetET92->Write(); jetET112->Write(); jetET180->Write();
-    refMET->Write();
-    MET_30U->Write(); MET_40U->Write(); MET_50U->Write(); MET_70U->Write(); MET_100U->Write();
-    // resolutions
-    hresMET->Write(); hresJet->Write();
+    if (recoOn) {
+      // efficiencies
+      refJetET->Write(); refmJetET->Write();
+      jetET50->Write(); jetET64->Write(); jetET76->Write(); jetET92->Write(); jetET112->Write(); jetET180->Write();
+      refMET->Write();
+      MET_30U->Write(); MET_40U->Write(); MET_50U->Write(); MET_70U->Write(); MET_100U->Write();
+      // resolutions
+      hresMET->Write(); hresJet->Write();
+      hresMET3->Write(); hresJet3->Write();
+      hresMET_inv->Write(); hresJet_inv->Write();
+      hresJet_hb->Write(); hresJet_hb_inv->Write();
+      hresJet_he->Write(); hresJet_he_inv->Write();
+      hresJet_hf->Write(); hresJet_hf_inv->Write();
+      h_resMET1->Write();h_resMET2->Write();h_resMET3->Write();h_resMET4->Write();h_resMET5->Write();h_resMET6->Write();h_resMET7->Write();h_resMET8->Write();h_resMET9->Write();h_resMET10->Write();
+      h_resJet1->Write();h_resJet2->Write();h_resJet3->Write();h_resJet4->Write();h_resJet5->Write();h_resJet6->Write();h_resJet7->Write();h_resJet8->Write();h_resJet9->Write();h_resJet10->Write();
+    }
   }
 
   
