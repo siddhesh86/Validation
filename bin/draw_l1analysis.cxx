@@ -21,9 +21,9 @@ int main()
 
   setTDRStyle();
   gROOT->ForceStyle();
-
+  
   // default, then new conditions
-  std::vector<std::string> filenames = {"l1analysis_def.root", "l1analysis_new_cond.root"};
+  std::vector<std::string> filenames = {"l1analysis_def.root", "l1analysis_linear_luts.root"};
   std::vector<std::string> l1Types = {"singleJet", "doubleJet", "tripleJet", "quadJet",
 					"htSum", "etSum", "metSum", "metHFSum"};
   
@@ -99,13 +99,16 @@ int main()
   std::map<std::string, TGraphAsymmErrors*> meteffHists_def;
   std::map<std::string, TGraphAsymmErrors*> meteffHists_new_cond;
 
+
+  //-----------------------------------------------------------------------
+  // L1 Jet efficiencies
+  //-----------------------------------------------------------------------
+
   int rebinF=2;
   
   TH1F *jetrefHists_def=dynamic_cast<TH1F*>(files.at(0)->Get("RefmJet"));jetrefHists_def->Rebin(rebinF);
   TH1F *jetrefHists_new_cond=dynamic_cast<TH1F*>(files.at(1)->Get("RefmJet"));jetrefHists_new_cond->Rebin(rebinF);
-
   
-
   std::vector<TCanvas*> tcanvases;
   
   for (auto jetType : jetTypes) {
@@ -138,16 +141,18 @@ int main()
     
     jeteffHists_def[jetType]->Draw("AP");
     jeteffHists_new_cond[jetType]->Draw("P");
-    jeteffHists_def[jetType]->GetXaxis()->SetTitle("Reco Jet E_{T} (GeV)");
+    jeteffHists_def[jetType]->GetXaxis()->SetTitle("offline Jet E_{T} (GeV)");
     jeteffHists_def[jetType]->GetYaxis()->SetTitle("Efficiency");
-      
+
     tcanvases.back()->Print(Form("plots/%sjetEffs_emu.pdf", jetType.c_str()));
     
-
   }
 
-  // MET effs
-  rebinF=8;
+  //-----------------------------------------------------------------------
+  // L1 ETM efficiencies
+  //-----------------------------------------------------------------------
+
+  rebinF=10;
   TH1F *metrefHists_def=dynamic_cast<TH1F*>(files.at(0)->Get("RefMET"));metrefHists_def->Rebin(rebinF);
   TH1F *metrefHists_new_cond=dynamic_cast<TH1F*>(files.at(1)->Get("RefMET"));metrefHists_new_cond->Rebin(rebinF);
   
@@ -181,30 +186,31 @@ int main()
     
     meteffHists_def[metType]->Draw("AP");
     meteffHists_new_cond[metType]->Draw("P");
-    meteffHists_def[metType]->GetXaxis()->SetTitle("Reco MET (GeV)");
+    meteffHists_def[metType]->GetXaxis()->SetTitle("offline MET (GeV)");
     meteffHists_def[metType]->GetYaxis()->SetTitle("Efficiency");
-    
+
     tcanvases.back()->Print(Form("plots/%smetEffs_emu.pdf", metType.c_str()));
     
 
   }
-
-   // Other res plots
+   
+   //-----------------------------------------------------------------------
+   // L1 Jet resolution summary plots
+   //-----------------------------------------------------------------------
   
   TF1 *fgaus = new TF1("g1","gaus");//,-2.,2.);
   fgaus->SetRange(-1.,1.);
   
-  // // Jet/MET resolution
-  // std::vector<std::string> resTypes = {"hresJet","hResMET"};
+  // // Jet resolution
   std::vector<TCanvas*> mycanvases;
   TH2F *resJet_def = dynamic_cast<TH2F*>(files.at(0)->Get("hresJet"));resJet_def->RebinX(4);
-  TH2F *resJet_new_cond = dynamic_cast<TH2F*>(files.at(1)->Get("hresJet"));resJet_new_cond->RebinX(4);
-
+  //  TH2F *resJet_new_cond = dynamic_cast<TH2F*>(files.at(1)->Get("hresJet"));resJet_new_cond->RebinX(4);
   resJet_def->FitSlicesY(fgaus);
   TH1D *resJet_def_1 = (TH1D*)gDirectory->Get("hresJet_1");
   TH1D *resJet_def_2 = (TH1D*)gDirectory->Get("hresJet_2");
   gROOT->cd();
-  
+
+  TH2F *resJet_new_cond = dynamic_cast<TH2F*>(files.at(1)->Get("hresJet"));resJet_new_cond->RebinX(4);
   resJet_new_cond->FitSlicesY(fgaus);
   TH1D *resJet_new_cond_1 = (TH1D*)gDirectory->Get("hresJet_1");
   TH1D *resJet_new_cond_2 = (TH1D*)gDirectory->Get("hresJet_2");
@@ -216,105 +222,102 @@ int main()
   gPad->SetGridx(); gPad->SetGridy();
   
   resJet_def_1->Draw("");
-  resJet_def_1->GetXaxis()->SetTitle("Reco Jet E_{T} (GeV)");
-  resJet_def_1->GetYaxis()->SetRangeUser(-1.5,1.5);
+  resJet_def_1->GetXaxis()->SetTitle("offline Jet E_{T} (GeV)");
+  // resJet_def_1->GetYaxis()->SetTitle("gaussian #mu");
+  resJet_def_1->GetYaxis()->SetRangeUser(-1.,1.);
   resJet_def_1->SetMarkerSize(0.5);
   resJet_def_1->SetMarkerStyle(24);
-  
-  // mycanvases.push_back(new TCanvas);
-  // mycanvases.back()->SetWindowSize(mycanvases.back()->GetWw(), 1.3*mycanvases.back()->GetWh());
  
   resJet_new_cond_1->Draw("same");
   resJet_new_cond_1->SetLineColor(2);
   resJet_new_cond_1->SetMarkerColor(2);
   resJet_new_cond_1->SetMarkerSize(0.5);
   resJet_new_cond_1->SetMarkerStyle(20);
-  mycanvases.back()->Print(Form("plots/%s_emu.pdf", "resJet_1"));
+  mycanvases.back()->Print(Form("plots/%s_emu.pdf", "resJet_mean"));
 
   mycanvases.push_back(new TCanvas);
   mycanvases.back()->SetWindowSize(mycanvases.back()->GetWw(), 1.3*mycanvases.back()->GetWh());
-  // resJet_def->FitSlicesY(fgaus);
 
-   gPad->SetGridx(); gPad->SetGridy();
+  gPad->SetGridx(); gPad->SetGridy();
   
   resJet_def_2->Draw("");
-  resJet_def_2->GetXaxis()->SetTitle("Reco Jet E_{T} (GeV)");
+  resJet_def_2->GetXaxis()->SetTitle("offline Jet E_{T} (GeV)");
+  // resJet_def_2->GetYaxis()->SetTitle("gaussian #sigma");
   resJet_def_2->GetYaxis()->SetRangeUser(0.,0.9);
   resJet_def_2->SetMarkerSize(0.5);
   resJet_def_2->SetMarkerStyle(24);
-
-  // resJet_new_cond->FitSlicesY(fgaus);
  
   resJet_new_cond_2->Draw("same");
   resJet_new_cond_2->SetLineColor(2);
   resJet_new_cond_2->SetMarkerColor(2);
   resJet_new_cond_2->SetMarkerSize(0.5);
   resJet_new_cond_2->SetMarkerStyle(20);
-  mycanvases.back()->Print(Form("plots/%s_emu.pdf", "resJet_2"));
 
-  // // MET resolution
-  // TF1 *fgaus2 = new TF1("g1","gaus");//,-2.,2.);
-  // fgaus2->SetRange(-2.,5.);
+  mycanvases.back()->Print(Form("plots/%s_emu.pdf", "resJet_sigma"));
 
-  // gROOT->cd();
+  //-----------------------------------------------------------------------
+  // L1 ETM resolution summary plots
+  //-----------------------------------------------------------------------
   
-  // std::vector<TCanvas*> mycanvases2;
-  // TH2F *resMET_def = dynamic_cast<TH2F*>(files.at(0)->Get("hResMET"));
-  // TH2F *resMET_new_cond = dynamic_cast<TH2F*>(files.at(1)->Get("hResMET"));
-
-  // resMET_def->FitSlicesY(fgaus2);
-  // TH1D *resMET_def_1 = (TH1D*)gDirectory->Get("hResMET_1");
-  // TH1D *resMET_def_2 = (TH1D*)gDirectory->Get("hResMET_2");
-  // gROOT->cd();
+  TF1 *fgaus0 = new TF1("g0","gaus");//,-2.,2.);
+  fgaus0->SetRange(-1.,3.);
   
-  // resMET_new_cond->FitSlicesY(fgaus2);
-  // TH1D *resMET_new_cond_1 = (TH1D*)gDirectory->Get("hResMET_1");
-  // TH1D *resMET_new_cond_2 = (TH1D*)gDirectory->Get("hResMET_2");
-  // gROOT->cd();
+  std::vector<TCanvas*> mycanvases2;
+  TH2F *resMET_def = dynamic_cast<TH2F*>(files.at(0)->Get("hResMET"));resMET_def->RebinX(5);
+  files.at(0)->cd();
+  resMET_def->FitSlicesY(fgaus0);//,1,80);//,20);
+
+  TH2F *resMET_new_cond = dynamic_cast<TH2F*>(files.at(1)->Get("hResMET"));resMET_new_cond->RebinX(5);
+  files.at(1)->cd();
+  resMET_new_cond->FitSlicesY(fgaus0);//,1,80);//,20);
   
-  // mycanvases2.push_back(new TCanvas);
-  // mycanvases2.back()->SetWindowSize(mycanvases2.back()->GetWw(), 1.3*mycanvases2.back()->GetWh());
+  mycanvases2.push_back(new TCanvas);
+  mycanvases2.back()->SetWindowSize(mycanvases2.back()->GetWw(), 1.3*mycanvases2.back()->GetWh());
 
-  // gPad->SetGridx(); gPad->SetGridy();
+  gPad->SetGridx(); gPad->SetGridy();
+
+  TH1D *resMET_def_1 = (TH1D*)files.at(0)->Get("hResMET_1");
+  resMET_def_1->Draw("");
+  resMET_def_1->GetXaxis()->SetTitle("offline MET (GeV)");
+  resMET_def_1->GetYaxis()->SetRangeUser(-2.,2);
+  resMET_def_1->SetMarkerSize(0.5);
+  resMET_def_1->SetMarkerStyle(24);
+  resMET_def_1->SetMarkerColor(1);
   
-  // resMET_def_1->Draw("");
-  // resMET_def_1->GetXaxis()->SetTitle("Reco MET (GeV)");
-  // resMET_def_1->GetYaxis()->SetRangeUser(-2.,2);
-  // resMET_def_1->SetMarkerSize(0.3);
-  // resMET_def_1->SetMarkerStyle(24);
+  TH1D *resMET_new_cond_1 = (TH1D*)files.at(1)->Get("hResMET_1");
+  resMET_new_cond_1->Draw("same");
+  resMET_new_cond_1->SetLineColor(2);
+  resMET_new_cond_1->SetMarkerColor(2);
+  resMET_new_cond_1->SetMarkerSize(0.5);
+  resMET_new_cond_1->SetMarkerStyle(20);
   
-  // // mycanvases2.push_back(new TCanvas);
-  // // mycanvases2.back()->SetWindowSize(mycanvases2.back()->GetWw(), 1.3*mycanvases2.back()->GetWh());
- 
-  // resMET_new_cond_1->Draw("same");
-  // resMET_new_cond_1->SetLineColor(2);
-  // resMET_new_cond_1->SetMarkerColor(2);
-  // resMET_new_cond_1->SetMarkerSize(0.3);
-  // resMET_new_cond_1->SetMarkerStyle(20);
-  // mycanvases2.back()->Print(Form("plots/%s_emu.pdf", "resMET_1"));
+  mycanvases2.back()->Print(Form("plots/%s_emu.pdf", "resMET_mean"));
 
-  // mycanvases2.push_back(new TCanvas);
-  // mycanvases2.back()->SetWindowSize(mycanvases2.back()->GetWw(), 1.3*mycanvases2.back()->GetWh());
-  // // resMET_def->FitSlicesY(fgaus);
+  mycanvases2.push_back(new TCanvas);
+  mycanvases2.back()->SetWindowSize(mycanvases2.back()->GetWw(), 1.3*mycanvases2.back()->GetWh());
 
-  //  gPad->SetGridx(); gPad->SetGridy();
+  gPad->SetGridx(); gPad->SetGridy();
+
+  TH1D *resMET_def_2 = (TH1D*)files.at(0)->Get("hResMET_2");
+  resMET_def_2->Draw("");
+  resMET_def_2->GetXaxis()->SetTitle("offline MET (GeV)");
+  resMET_def_2->GetYaxis()->SetRangeUser(0.,1.);
+  resMET_def_2->SetMarkerSize(0.5);
+  resMET_def_2->SetMarkerStyle(24);
+  resMET_def_2->SetMarkerColor(1);
+
+  TH1D *resMET_new_cond_2 = (TH1D*)files.at(1)->Get("hResMET_2");
+  resMET_new_cond_2->Draw("same");
+  resMET_new_cond_2->SetLineColor(2);
+  resMET_new_cond_2->SetMarkerColor(2);
+  resMET_new_cond_2->SetMarkerSize(0.5);
+  resMET_new_cond_2->SetMarkerStyle(20);
   
-  // resMET_def_2->Draw("");
-  // resMET_def_2->GetXaxis()->SetTitle("Reco MET (GeV)");
-  // resMET_def_2->GetYaxis()->SetRangeUser(0.,1.);
-  // resMET_def_2->SetMarkerSize(0.3);
-  // resMET_def_2->SetMarkerStyle(24);
-
-  // // resMET_new_cond->FitSlicesY(fgaus);
- 
-  // resMET_new_cond_2->Draw("same");
-  // resMET_new_cond_2->SetLineColor(2);
-  // resMET_new_cond_2->SetMarkerColor(2);
-  // resMET_new_cond_2->SetMarkerSize(0.3);
-  // resMET_new_cond_2->SetMarkerStyle(20);
-  // mycanvases2.back()->Print(Form("plots/%s_emu.pdf", "resMET_2"));
-
-  // Next plots
+  mycanvases2.back()->Print(Form("plots/%s_emu.pdf", "resMET_sigma"));
+  
+  //-----------------------------------------------------------------------
+  // Resolution in ET bins plots
+  //-----------------------------------------------------------------------
   
   std::map<std::string, TH1F*> resHists_def;
   std::map<std::string, TH1F*> resHists_new_cond;
@@ -343,10 +346,15 @@ int main()
 
     resHists_def[rType]->Fit("gaus","R+","hist",-2.,2.); //Draw("hist");
     resHists_def[rType]->GetYaxis()->SetRangeUser(0.,1.4*resHists_def[rType]->GetMaximum());
-    //  resHists_def[rType]->GetFunction("gaus")->SetLineColor(kBlack);
+    TF1 *f1 = resHists_def[rType]->GetFunction("gaus"); //->SetLineColor(kBlack);
+    f1->SetLineColor(kBlack);
+    f1->Draw("SAME");
+    
     resHists_new_cond[rType]->Fit("gaus","R+","histsame",-2.,2.);
-    // resHists_new_cond[rType]->GetFunction("gaus")->SetLineColor(kRed);
-      
+    TF1 *f2 = resHists_new_cond[rType]->GetFunction("gaus"); //->SetLineColor(kBlack);
+    f2->SetLineColor(kRed);
+    f2->Draw("SAME");
+
     rcanvases.back()->Print(Form("plots/%sbin_emu.pdf", rType.c_str()));
     
   }
@@ -354,7 +362,9 @@ int main()
   // for(auto pair : resHists_hw) pair.second->SetLineStyle(kDashed);
   for(auto pair : resHists_def) pair.second->SetLineStyle(kDotted);
   
-  // Add plots
+  //-----------------------------------------------------------------------
+  // Standard L1 quantities
+  //-----------------------------------------------------------------------
   
   std::vector<std::string> jetPlots = {"singleJet", "doubleJet", "tripleJet", "quadJet"};
   std::vector<std::string> scalarSumPlots = {"etSum", "htSum"};
