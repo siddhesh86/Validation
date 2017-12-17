@@ -26,7 +26,7 @@ config.Data.ignoreLocality = False
 config.Data.inputDBS = 'global'
 config.Data.splitting = 'LumiBased'
 config.Data.unitsPerJob = 5
-config.Data.useParent = False
+config.Data.useParent = True
 
 
 # This string is used to construct the output dataset name                                                                                   
