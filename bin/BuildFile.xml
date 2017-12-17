@@ -3,5 +3,7 @@
 <environment>
   <bin file="draw_rates.cxx" name="draw_rates.exe"/>
   <bin file="rates.cxx" name="rates.exe"/>
+  <bin file="draw_l1analysis.cxx" name="draw_l1analysis.exe"/>
+  <bin file="l1jetanalysis.cxx" name="l1jetanalysis.exe"/>
 </environment>
 <flags CXXFLAGS="-Wall -Werror -g"/>
