@@ -7,7 +7,7 @@ These scripts use the L1Ntuple framework, which should be set up as described he
 
 After setting up the L1Ntuple environment, issue the following:
 ```
-git clone git@github.com:christopheralanwest/Validation.git HcalTrigger/Validation
+git clone git@github.com:cms-hcal-trigger/Validation.git HcalTrigger/Validation
 ```
 The script that submit CRAB jobs is called `submit_jobs.py`. Its required arguments are a good run lumimask, a dataset name, the new HcalL1TriggerObjects tag, and the storage site for the output. For example:
 ```
