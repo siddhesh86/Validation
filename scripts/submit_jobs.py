@@ -8,11 +8,11 @@ import json
 
 # Relatively stable parameters can have defaults.
 # era should never change within a year
-ERA = 'Run2_2017'
+ERA = 'Run2_2018'
 # current data global tag
-CONDITIONS = '92X_dataRun2_HLT_v7'
+CONDITIONS = '101X_dataRun2_HLT_v7'
 # L1 calibrations; needs to be updated when L1 calibrations change
-CALOSTAGE2PARAMS = '2017_v1_8_2_updateHFSF_v7MET'
+CALOSTAGE2PARAMS = '2018_v1_1_ECALZS'
 # dummy value needed so that cmsDriver.py will
 # assume that there is an input file
 DEFAULTINPUT = '/store/express/Run2017B/ExpressPhysics/FEVT/Express-v1/000/297/562/00000/EE1F5F26-145B-E711-A146-02163E019C23.root'
@@ -35,7 +35,7 @@ def generate_ntuple_config(configtype, newtag):
     cmd += '-n 10 '
     # suppresses the (unneeded) the RAW2DIGI output
     cmd += '--no_output '
-    # should always be set to Run2_2017 for 2017 data
+    # should always be set to Run2_2018 for 2018 data
     cmd += '--era=' + ERA +  ' '
     # validations are always run on data, not MC
     cmd += '--data '
@@ -46,7 +46,7 @@ def generate_ntuple_config(configtype, newtag):
     # include emulated quantities in L1Ntuple
     cmd += '--customise=L1Trigger/L1TNtuples/customiseL1Ntuple.L1NtupleRAWEMU '
     # use correct CaloStage2Params; should only change if Layer2 calibration changes
-    cmd += '--customise=L1Trigger/Configuration/customiseSettings.L1TSettingsToCaloStage2Params_' + CALOSTAGE2PARAMS + ' '
+    cmd += '--customise=L1Trigger/Configuration/customiseSettings.L1TSettingsToCaloParams_' + CALOSTAGE2PARAMS + ' '
     # override HcalL1TriggerObjects
     if(configtype == 'new_cond'):
         cmd += '--custom_conditions=' + newtag + ',HcalL1TriggerObjectsRcd,' + FRONTIER + ' '

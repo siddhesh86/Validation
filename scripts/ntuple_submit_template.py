@@ -26,8 +26,7 @@ config.Data.ignoreLocality = False
 config.Data.inputDBS = 'global'
 config.Data.splitting = 'LumiBased'
 config.Data.unitsPerJob = 5
-config.Data.useParent = True
-
+config.Data.useParent = False
 
 # This string is used to construct the output dataset name                                                                                   
 config.Data.outputDatasetTag = 'Hcal' + str(RUN) + '_' + conditionType
