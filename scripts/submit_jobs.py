@@ -6,6 +6,9 @@ import os
 import argparse
 import json
 
+## choose the type of jobs: use ['def', 'new_cond'] for Validation and ['def'] for other:
+COND_LIST = ['def']
+#COND_LIST = ['def', 'new_cond']
 # Relatively stable parameters can have defaults.
 # era should never change within a year
 ERA = 'Run2_2018'
@@ -61,7 +64,7 @@ PARSER = argparse.ArgumentParser()
 # existing GT
 PARSER.add_argument('-g', '--globaltag')
 # new L1TriggerObjects tag
-PARSER.add_argument('-t', '--newtag', required=True)
+PARSER.add_argument('-t', '--newtag', required=False)
 PARSER.add_argument('-l', '--lumimask', required=True)
 PARSER.add_argument('-d', '--dataset', required=True)
 PARSER.add_argument('-o', '--outputsite', required=True)
@@ -80,7 +83,8 @@ if len(GOOD_RUN_DATA) != 1:
     sys.exit("Only running on a single run at a time is supported.")
 RUN = GOOD_RUN_DATA.keys()[0]
 # generate configs both for default and new conditions
-for jobtype in ['def', 'new_cond']:
+#for jobtype in ['def', 'new_cond']:
+for jobtype in COND_LIST:
     tmpfile = 'submit_tmp.py'
     crab_submit_script = open(tmpfile, 'w')
     crab_submit_script.write("RUN = " + str(RUN) + '\n')
@@ -100,8 +104,12 @@ for jobtype in ['def', 'new_cond']:
     os.remove(tmpfile)
 
     # generate cmsDriver commands
-    print generate_ntuple_config(jobtype, ARGS.newtag)
-    os.system(generate_ntuple_config(jobtype, ARGS.newtag))
+    if ARGS.newtag>0:
+        print generate_ntuple_config(jobtype, ARGS.newtag)
+        os.system(generate_ntuple_config(jobtype, ARGS.newtag))
+    else:
+        print generate_ntuple_config(jobtype,0)
+        os.system(generate_ntuple_config(jobtype, 0))  
     if(not ARGS.no_exec):
         crabcmd = "crab submit " + filename
         os.system(crabcmd)
