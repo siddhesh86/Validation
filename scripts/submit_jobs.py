@@ -12,7 +12,8 @@ ERA = 'Run2_2018'
 # current data global tag
 CONDITIONS = '101X_dataRun2_HLT_v7'
 # L1 calibrations; needs to be updated when L1 calibrations change
-CALOSTAGE2PARAMS = '2018_v1_1_ECALZS'
+#CALOSTAGE2PARAMS = '2018_v1_1_ECALZS'
+CALOSTAGE2PARAMS = '2018_v1_3' #default
 # dummy value needed so that cmsDriver.py will
 # assume that there is an input file
 DEFAULTINPUT = '/store/express/Run2017B/ExpressPhysics/FEVT/Express-v1/000/297/562/00000/EE1F5F26-145B-E711-A146-02163E019C23.root'
@@ -66,6 +67,7 @@ PARSER.add_argument('-l', '--lumimask', required=True)
 PARSER.add_argument('-d', '--dataset', required=True)
 PARSER.add_argument('-o', '--outputsite', required=True)
 PARSER.add_argument('-n', '--no_exec')
+PARSER.add_argument('-c', '--caloparams')
 ARGS = PARSER.parse_args()
 
 # check environment setup
@@ -76,6 +78,8 @@ GOOD_RUN_STRING = FILE.read()
 GOOD_RUN_DATA = json.loads(GOOD_RUN_STRING)
 if(ARGS.globaltag):
     CONDITIONS = ARGS.globaltag
+ if(ARGS.caloparams):
+    CALOSTAGE2PARAMS = ARGS.caloparams        
 if len(GOOD_RUN_DATA) != 1:
     sys.exit("Only running on a single run at a time is supported.")
 RUN = GOOD_RUN_DATA.keys()[0]
