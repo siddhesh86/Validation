@@ -12,7 +12,6 @@ ERA = 'Run2_2018'
 # current data global tag
 CONDITIONS = '101X_dataRun2_HLT_v7'
 # L1 calibrations; needs to be updated when L1 calibrations change
-#CALOSTAGE2PARAMS = '2018_v1_1_ECALZS'
 CALOSTAGE2PARAMS = '2018_v1_3' #default
 # dummy value needed so that cmsDriver.py will
 # assume that there is an input file
@@ -26,7 +25,7 @@ def check_setup():
     if not ("crabclient" in os.environ['PATH']):
         sys.exit("Please set up crab environment before running")
 
-def generate_ntuple_config(configtype, newtag):
+def generate_ntuple_config(configtype, newtag, caloparams):
     """Generates ntuple python file for a given 
     config type (default or new conditions) and 
     a new HcalL1TriggerObjects tag"""
@@ -47,7 +46,8 @@ def generate_ntuple_config(configtype, newtag):
     # include emulated quantities in L1Ntuple
     cmd += '--customise=L1Trigger/L1TNtuples/customiseL1Ntuple.L1NtupleRAWEMU '
     # use correct CaloStage2Params; should only change if Layer2 calibration changes
-    cmd += '--customise=L1Trigger/Configuration/customiseSettings.L1TSettingsToCaloParams_' + CALOSTAGE2PARAMS + ' '
+    if(caloparams):
+        cmd += '--customise=L1Trigger/Configuration/customiseSettings.L1TSettingsToCaloParams_' + CALOSTAGE2PARAMS + ' '
     # override HcalL1TriggerObjects
     if(configtype == 'new_cond'):
         cmd += '--custom_conditions=' + newtag + ',HcalL1TriggerObjectsRcd,' + FRONTIER + ' '
@@ -78,7 +78,7 @@ GOOD_RUN_STRING = FILE.read()
 GOOD_RUN_DATA = json.loads(GOOD_RUN_STRING)
 if(ARGS.globaltag):
     CONDITIONS = ARGS.globaltag
- if(ARGS.caloparams):
+if(ARGS.caloparams):
     CALOSTAGE2PARAMS = ARGS.caloparams        
 if len(GOOD_RUN_DATA) != 1:
     sys.exit("Only running on a single run at a time is supported.")
@@ -104,8 +104,8 @@ for jobtype in ['def', 'new_cond']:
     os.remove(tmpfile)
 
     # generate cmsDriver commands
-    print generate_ntuple_config(jobtype, ARGS.newtag)
-    os.system(generate_ntuple_config(jobtype, ARGS.newtag))
+    print generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams)
+    os.system(generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams))
     if(not ARGS.no_exec):
         crabcmd = "crab submit " + filename
         os.system(crabcmd)
