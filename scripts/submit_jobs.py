@@ -49,7 +49,8 @@ def generate_ntuple_config(configtype, newtag, caloparams):
     # include emulated quantities in L1Ntuple
     cmd += '--customise=L1Trigger/L1TNtuples/customiseL1Ntuple.L1NtupleRAWEMU '
     # use correct CaloStage2Params; should only change if Layer2 calibration changes
-    cmd += '--customise=L1Trigger/Configuration/customiseSettings.L1TSettingsToCaloParams_' + CALOSTAGE2PARAMS + ' '
+    if(caloparams):
+        cmd += '--customise=L1Trigger/Configuration/customiseSettings.L1TSettingsToCaloParams_' + CALOSTAGE2PARAMS + ' '
     # override HcalL1TriggerObjects
     if(configtype == 'new_cond'):
         cmd += '--custom_conditions=' + newtag + ',HcalL1TriggerObjectsRcd,' + FRONTIER + ' '
@@ -69,6 +70,7 @@ PARSER.add_argument('-l', '--lumimask', required=True)
 PARSER.add_argument('-d', '--dataset', required=True)
 PARSER.add_argument('-o', '--outputsite', required=True)
 PARSER.add_argument('-n', '--no_exec')
+PARSER.add_argument('-c', '--caloparams')
 ARGS = PARSER.parse_args()
 
 # check environment setup
