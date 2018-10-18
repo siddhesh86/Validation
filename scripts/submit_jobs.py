@@ -6,13 +6,16 @@ import os
 import argparse
 import json
 
+## choose the type of jobs: use ['def', 'new_cond'] for Validation and ['def'] for other:
+COND_LIST = ['def']
+#COND_LIST = ['def', 'new_cond']
 # Relatively stable parameters can have defaults.
 # era should never change within a year
 ERA = 'Run2_2018'
 # current data global tag
 CONDITIONS = '101X_dataRun2_HLT_v7'
 # L1 calibrations; needs to be updated when L1 calibrations change
-CALOSTAGE2PARAMS = '2018_v1_3' #default
+CALOSTAGE2PARAMS = '2018_v1_1_ECALZS'
 # dummy value needed so that cmsDriver.py will
 # assume that there is an input file
 DEFAULTINPUT = '/store/express/Run2017B/ExpressPhysics/FEVT/Express-v1/000/297/562/00000/EE1F5F26-145B-E711-A146-02163E019C23.root'
@@ -25,7 +28,7 @@ def check_setup():
     if not ("crabclient" in os.environ['PATH']):
         sys.exit("Please set up crab environment before running")
 
-def generate_ntuple_config(configtype, newtag, caloparams):
+def generate_ntuple_config(configtype, newtag):
     """Generates ntuple python file for a given 
     config type (default or new conditions) and 
     a new HcalL1TriggerObjects tag"""
@@ -46,8 +49,7 @@ def generate_ntuple_config(configtype, newtag, caloparams):
     # include emulated quantities in L1Ntuple
     cmd += '--customise=L1Trigger/L1TNtuples/customiseL1Ntuple.L1NtupleRAWEMU '
     # use correct CaloStage2Params; should only change if Layer2 calibration changes
-    if(caloparams):
-        cmd += '--customise=L1Trigger/Configuration/customiseSettings.L1TSettingsToCaloParams_' + CALOSTAGE2PARAMS + ' '
+    cmd += '--customise=L1Trigger/Configuration/customiseSettings.L1TSettingsToCaloParams_' + CALOSTAGE2PARAMS + ' '
     # override HcalL1TriggerObjects
     if(configtype == 'new_cond'):
         cmd += '--custom_conditions=' + newtag + ',HcalL1TriggerObjectsRcd,' + FRONTIER + ' '
@@ -62,12 +64,11 @@ PARSER = argparse.ArgumentParser()
 # existing GT
 PARSER.add_argument('-g', '--globaltag')
 # new L1TriggerObjects tag
-PARSER.add_argument('-t', '--newtag', required=True)
+PARSER.add_argument('-t', '--newtag', required=False)
 PARSER.add_argument('-l', '--lumimask', required=True)
 PARSER.add_argument('-d', '--dataset', required=True)
 PARSER.add_argument('-o', '--outputsite', required=True)
 PARSER.add_argument('-n', '--no_exec')
-PARSER.add_argument('-c', '--caloparams')
 ARGS = PARSER.parse_args()
 
 # check environment setup
@@ -78,13 +79,15 @@ GOOD_RUN_STRING = FILE.read()
 GOOD_RUN_DATA = json.loads(GOOD_RUN_STRING)
 if(ARGS.globaltag):
     CONDITIONS = ARGS.globaltag
-if(ARGS.caloparams):
-    CALOSTAGE2PARAMS = ARGS.caloparams        
 if len(GOOD_RUN_DATA) != 1:
     sys.exit("Only running on a single run at a time is supported.")
 RUN = GOOD_RUN_DATA.keys()[0]
 # generate configs both for default and new conditions
-for jobtype in ['def', 'new_cond']:
+#for jobtype in ['def', 'new_cond']:
+if ARGS.newtag>0:
+    COND_LIST.append('new_cond') 
+
+for jobtype in COND_LIST:
     tmpfile = 'submit_tmp.py'
     crab_submit_script = open(tmpfile, 'w')
     crab_submit_script.write("RUN = " + str(RUN) + '\n')
@@ -104,8 +107,16 @@ for jobtype in ['def', 'new_cond']:
     os.remove(tmpfile)
 
     # generate cmsDriver commands
+    if ARGS.newtag>0:
+        print generate_ntuple_config(jobtype, ARGS.newtag)
+        os.system(generate_ntuple_config(jobtype, ARGS.newtag))
+    else:
+        print generate_ntuple_config(jobtype,0)
+        os.system(generate_ntuple_config(jobtype, 0))  
+
     print generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams)
-    os.system(generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams))
+    os.system(generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams))    
+
     if(not ARGS.no_exec):
         crabcmd = "crab submit " + filename
         os.system(crabcmd)
