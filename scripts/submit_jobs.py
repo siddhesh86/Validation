@@ -84,6 +84,9 @@ if len(GOOD_RUN_DATA) != 1:
 RUN = GOOD_RUN_DATA.keys()[0]
 # generate configs both for default and new conditions
 #for jobtype in ['def', 'new_cond']:
+if ARGS.newtag>0:
+    COND_LIST.append('new_cond') 
+
 for jobtype in COND_LIST:
     tmpfile = 'submit_tmp.py'
     crab_submit_script = open(tmpfile, 'w')
