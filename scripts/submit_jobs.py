@@ -15,7 +15,7 @@ ERA = 'Run2_2018'
 # current data global tag
 CONDITIONS = '101X_dataRun2_HLT_v7'
 # L1 calibrations; needs to be updated when L1 calibrations change
-CALOSTAGE2PARAMS = '2018_v1_1_ECALZS'
+CALOSTAGE2PARAMS = '2018_v1_3'
 # dummy value needed so that cmsDriver.py will
 # assume that there is an input file
 DEFAULTINPUT = '/store/express/Run2017B/ExpressPhysics/FEVT/Express-v1/000/297/562/00000/EE1F5F26-145B-E711-A146-02163E019C23.root'
@@ -28,7 +28,7 @@ def check_setup():
     if not ("crabclient" in os.environ['PATH']):
         sys.exit("Please set up crab environment before running")
 
-def generate_ntuple_config(configtype, newtag):
+def generate_ntuple_config(configtype, newtag, caloparams):
     """Generates ntuple python file for a given 
     config type (default or new conditions) and 
     a new HcalL1TriggerObjects tag"""
@@ -79,6 +79,8 @@ GOOD_RUN_STRING = FILE.read()
 GOOD_RUN_DATA = json.loads(GOOD_RUN_STRING)
 if(ARGS.globaltag):
     CONDITIONS = ARGS.globaltag
+if(ARGS.caloparams):
+    CALOSTAGE2PARAMS = ARGS.caloparams   
 if len(GOOD_RUN_DATA) != 1:
     sys.exit("Only running on a single run at a time is supported.")
 RUN = GOOD_RUN_DATA.keys()[0]
@@ -108,11 +110,11 @@ for jobtype in COND_LIST:
 
     # generate cmsDriver commands
     if ARGS.newtag>0:
-        print generate_ntuple_config(jobtype, ARGS.newtag)
-        os.system(generate_ntuple_config(jobtype, ARGS.newtag))
+        print generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams)
+        os.system(generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams))
     else:
-        print generate_ntuple_config(jobtype,0)
-        os.system(generate_ntuple_config(jobtype, 0))  
+        print generate_ntuple_config(jobtype,0, ARGS.caloparams)
+        os.system(generate_ntuple_config(jobtype, 0, ARGS.caloparams))  
 
     print generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams)
     os.system(generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams))    
