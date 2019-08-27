@@ -13,7 +13,7 @@ COND_LIST = ['def']
 # era should never change within a year
 ERA = 'Run2_2018'
 # current data global tag
-CONDITIONS = '101X_dataRun2_HLT_v7'
+CONDITIONS = '101X_dataRun2_Prompt_v9'
 # L1 calibrations; needs to be updated when L1 calibrations change
 CALOSTAGE2PARAMS = '2018_v1_3'
 # dummy value needed so that cmsDriver.py will
@@ -28,10 +28,14 @@ def check_setup():
     if not ("crabclient" in os.environ['PATH']):
         sys.exit("Please set up crab environment before running")
 
-def generate_ntuple_config(configtype, newtag, caloparams):
+def generate_ntuple_config(configtype, newtag, caloparams, algo):
     """Generates ntuple python file for a given 
     config type (default or new conditions) and 
     a new HcalL1TriggerObjects tag"""
+
+    samples = 2
+    if "1" in algo: samples = 1
+
     cmd = 'cmsDriver.py l1Ntuple -s RAW2DIGI '
     cmd += '--python_filename=ntuple_maker_' + configtype + '.py '
     # number of events; overridden by CRAB
@@ -47,7 +51,7 @@ def generate_ntuple_config(configtype, newtag, caloparams):
     # run re-emulation including re-emulation of HCAL TPs
     cmd += '--customise=L1Trigger/Configuration/customiseReEmul.L1TReEmulFromRAWsimHcalTP '
     # include emulated quantities in L1Ntuple
-    cmd += '--customise=L1Trigger/L1TNtuples/customiseL1Ntuple.L1NtupleRAWEMU '
+    cmd += '--customise=L1Trigger/L1TNtuples/customiseL1Ntuple.L1NtupleAODRAWEMU '
     # use correct CaloStage2Params; should only change if Layer2 calibration changes
     if(caloparams):
         cmd += '--customise=L1Trigger/Configuration/customiseSettings.L1TSettingsToCaloParams_' + CALOSTAGE2PARAMS + ' '
@@ -57,6 +61,14 @@ def generate_ntuple_config(configtype, newtag, caloparams):
     # need to use LUTGenerationMode = False because we are using L1TriggerObjects
     cmd += "--customise_commands='process.HcalTPGCoderULUT.LUTGenerationMode=cms.bool(False)' "
     # default input file
+
+    ## Add the HcalTrigPrimProducers module to configure the PFA
+    #cmd += "--customise='SimCalorimetry/HcalTrigPrimProducers.hcaltpdigi_cff' "
+    ## Give name of algo to use, number of samples
+    #cmd += "--customise_commands='process.simHcalTriggerPrimitiveDigis.numberOfSamples = %d' "%(samples)
+    #cmd += "--customise_commands='process.simHcalTriggerPrimitiveDigis.numberOfPresamples = 0' "
+    #cmd += "--customise_commands='process.simHcalTriggerPrimitiveDigis.PeakFinderAlgorithmName = cms.untracked.string(%s)' "%(algo)
+
     cmd += '--filein=' + DEFAULTINPUT + ' '
     cmd += '--no_exec '
     return cmd
@@ -68,6 +80,7 @@ PARSER.add_argument('-g', '--globaltag')
 PARSER.add_argument('-t', '--newtag', required=False)
 PARSER.add_argument('-l', '--lumimask', required=True)
 PARSER.add_argument('-d', '--dataset', required=True)
+PARSER.add_argument('-a', '--algo', required=True)
 PARSER.add_argument('-o', '--outputsite', required=True)
 PARSER.add_argument('-n', '--no_exec')
 PARSER.add_argument('-c', '--caloparams')
@@ -102,21 +115,46 @@ for jobtype in COND_LIST:
     crab_submit_script.write("OUTPUTSITE = '" + ARGS.outputsite + "'\n")
     crab_submit_script.write("LUMIMASK = '" + ARGS.lumimask + "'\n")
     crab_submit_script.write("DATASET = '" + ARGS.dataset + "'\n\n")
+    crab_submit_script.write("PFA = '" + ARGS.algo + "'\n\n")
     crab_submit_script.close()
     
     # concatenate crab submission file with template
-    filename = 'submit_run_' + str(RUN) + '_' + jobtype + '.py'
+    filename = 'submit_run_' + jobtype + '.py'
     command = "cat submit_tmp.py ntuple_submit_template.py > " + filename
     os.system(command)
     os.remove(tmpfile)
 
     # generate cmsDriver commands
     if ARGS.newtag>0:
-        print generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams)
-        os.system(generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams))
+        print generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams, ARGS.algo)
+        os.system(generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams, ARGS.algo))
     else:
-        print generate_ntuple_config(jobtype,0, ARGS.caloparams)
-        os.system(generate_ntuple_config(jobtype, 0, ARGS.caloparams))  
+        print generate_ntuple_config(jobtype,0, ARGS.caloparams, ARGS.algo)
+        os.system(generate_ntuple_config(jobtype, 0, ARGS.caloparams, ARGS.algo))  
+
+    f = open("ntuple_maker_def.py", "r")
+    contents = f.readlines()
+    f.close()
+    
+    contents.insert(22,"process.load(\"SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff\")\n")
+    contents.insert(23,"\n")
+    
+    if "1" not in ARGS.algo:
+        contents.insert(24,"print \"Only using 2 samples\"\n")
+        contents.insert(25,"process.simHcalTriggerPrimitiveDigis.numberOfSamples = 2\n")
+        contents.insert(26,"process.simHcalTriggerPrimitiveDigis.numberOfPresamples = 0\n")
+    else:
+        contents.insert(24,"print \"Only using 1 sample\"\n")
+        contents.insert(25,"process.simHcalTriggerPrimitiveDigis.numberOfSamples = 1\n")
+        contents.insert(26,"process.simHcalTriggerPrimitiveDigis.numberOfPresamples = 0\n")
+
+    contents.insert(27,"\n")
+    contents.insert(28,"process.simHcalTriggerPrimitiveDigis.PeakFinderAlgorithmName = cms.untracked.string(\"%s\")\n\n"%(ARGS.algo))
+    
+    f = open("ntuple_maker_def.py", "w")
+    contents = "".join(contents)
+    f.write(contents)
+    f.close()
 
     if(not ARGS.no_exec):
         crabcmd = "crab submit " + filename

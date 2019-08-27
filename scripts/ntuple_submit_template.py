@@ -9,7 +9,7 @@ if NEWCONDITIONS:
 from CRABClient.UserUtilities import config
 config = config()
 
-config.General.requestName = "hcal_" + str(RUN) + "_" + conditionType
+config.General.requestName = 'hcal' + "_" + str(RUN) + '_' + str(PFA) + "_" + str(DATASET.split("/")[1]) + "_" + conditionType
 config.General.transferLogs = True
 config.General.transferOutputs = True
 
@@ -25,11 +25,11 @@ config.Data.inputDataset = DATASET
 config.Data.ignoreLocality = False
 config.Data.inputDBS = 'global'
 config.Data.splitting = 'LumiBased'
-config.Data.unitsPerJob = 5
-config.Data.useParent = False
+config.Data.unitsPerJob = 1
+config.Data.useParent = False 
 
 # This string is used to construct the output dataset name                                                                                   
-config.Data.outputDatasetTag = 'Hcal' + str(RUN) + '_' + conditionType
+config.Data.outputDatasetTag = 'Hcal' + "_" + str(RUN) + '_' + str(PFA) + "_" + str(DATASET.split("/")[1]) + "_" + conditionType
 
 # These values only make sense for processing data                                                                                           
 #    Select input data based on a lumi mask                                                                                                  
