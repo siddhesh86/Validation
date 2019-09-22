@@ -20,10 +20,12 @@ if(ARGS.default):
     cmd += " -o def.log \'rates.exe def "
     cmd += ARGS.default
     cmd += "; cp rates_def.root '`pwd`"
-    os.system(cmd)
+    print cmd
+    #os.system(cmd)
 if(ARGS.new):
     cmd = BASECMD
     cmd += " -o new.log \'rates.exe new "
     cmd += ARGS.new
     cmd += "; cp rates_new_cond.root '`pwd`"
-    os.system(cmd)
+    print cmd
+    #os.system(cmd)

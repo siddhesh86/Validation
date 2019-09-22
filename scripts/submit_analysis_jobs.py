@@ -20,10 +20,12 @@ if(ARGS.default):
     cmd += " -o def.log \'l1jetanalysis.exe def "
     cmd += ARGS.default
     cmd += "; cp l1analysis_def.root '`pwd`"
-    os.system(cmd)
+    print cmd
+    #os.system(cmd)
 if(ARGS.new):
     cmd = BASECMD
     cmd += " -o new.log \'l1jetanalysis.exe new "
     cmd += ARGS.new
     cmd += "; cp l1analysis_new_cond.root '`pwd`"
-    os.system(cmd)
+    print cmd
+    #os.system(cmd)

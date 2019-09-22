@@ -13,7 +13,7 @@ COND_LIST = ['def']
 # era should never change within a year
 ERA = 'Run2_2018'
 # current data global tag
-CONDITIONS = '101X_dataRun2_Prompt_v9'
+CONDITIONS = '103X_dataRun2_Prompt_v3'
 # L1 calibrations; needs to be updated when L1 calibrations change
 CALOSTAGE2PARAMS = '2018_v1_3'
 # dummy value needed so that cmsDriver.py will
@@ -62,13 +62,6 @@ def generate_ntuple_config(configtype, newtag, caloparams, algo):
     cmd += "--customise_commands='process.HcalTPGCoderULUT.LUTGenerationMode=cms.bool(False)' "
     # default input file
 
-    ## Add the HcalTrigPrimProducers module to configure the PFA
-    #cmd += "--customise='SimCalorimetry/HcalTrigPrimProducers.hcaltpdigi_cff' "
-    ## Give name of algo to use, number of samples
-    #cmd += "--customise_commands='process.simHcalTriggerPrimitiveDigis.numberOfSamples = %d' "%(samples)
-    #cmd += "--customise_commands='process.simHcalTriggerPrimitiveDigis.numberOfPresamples = 0' "
-    #cmd += "--customise_commands='process.simHcalTriggerPrimitiveDigis.PeakFinderAlgorithmName = cms.untracked.string(%s)' "%(algo)
-
     cmd += '--filein=' + DEFAULTINPUT + ' '
     cmd += '--no_exec '
     return cmd
@@ -82,7 +75,8 @@ PARSER.add_argument('-l', '--lumimask', required=True)
 PARSER.add_argument('-d', '--dataset', required=True)
 PARSER.add_argument('-a', '--algo', required=True)
 PARSER.add_argument('-o', '--outputsite', required=True)
-PARSER.add_argument('-n', '--no_exec')
+PARSER.add_argument('-p', '--useparent', default=False, action="store_true")
+PARSER.add_argument('-n', '--no_exec', default=False, action="store_true")
 PARSER.add_argument('-c', '--caloparams')
 ARGS = PARSER.parse_args()
 
@@ -115,6 +109,7 @@ for jobtype in COND_LIST:
     crab_submit_script.write("OUTPUTSITE = '" + ARGS.outputsite + "'\n")
     crab_submit_script.write("LUMIMASK = '" + ARGS.lumimask + "'\n")
     crab_submit_script.write("DATASET = '" + ARGS.dataset + "'\n\n")
+    crab_submit_script.write("USEPARENT = %r"%(ARGS.useparent) + "\n\n")
     crab_submit_script.write("PFA = '" + ARGS.algo + "'\n\n")
     crab_submit_script.close()
     
@@ -136,6 +131,11 @@ for jobtype in COND_LIST:
     contents = f.readlines()
     f.close()
     
+    # Begin lamest hack in the world
+    contents.insert(2, "import sys\n")
+    contents.insert(3, "sys.path.insert(0, \"/uscms/home/jhiltb/nobackup/HCAL_Trigger_Study/scripts/\")\n")
+    contents.insert(10, "from algo_weights import pfaWeightsMap\n")
+
     contents.insert(22,"process.load(\"SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff\")\n")
     contents.insert(23,"\n")
     
@@ -149,7 +149,10 @@ for jobtype in COND_LIST:
         contents.insert(26,"process.simHcalTriggerPrimitiveDigis.numberOfPresamples = 0\n")
 
     contents.insert(27,"\n")
-    contents.insert(28,"process.simHcalTriggerPrimitiveDigis.PeakFinderAlgorithmName = cms.untracked.string(\"%s\")\n\n"%(ARGS.algo))
+    contents.insert(28,"if \"%s\" in pfaWeightsMap:\n"%(ARGS.algo))
+    contents.insert(29,"    process.simHcalTriggerPrimitiveDigis.PeakFinderAlgorithmWeights = pfaWeightsMap[\"%s\"]\n"%(ARGS.algo))
+    contents.insert(30,"else:\n")
+    contents.insert(31,"    print \"No weights defined for algo '%s'; defaulting to zero weights!\"\n\n"%(ARGS.algo))
     
     f = open("ntuple_maker_def.py", "w")
     contents = "".join(contents)
