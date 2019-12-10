@@ -1,5 +1,3 @@
-
-# HCAL TP updates validation at L1
 These scripts use the L1Ntuple framework, which should be set up as described here:
 
 [https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideL1TStage2Instructions#Environment_Setup_with_Integrati](https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideL1TStage2Instructions#Environment_Setup_with_Integrati)
