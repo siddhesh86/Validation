@@ -1,5 +1,5 @@
 
-# HCAL TP updates Validation at L1
+# HCAL TP updates validation at L1
 These scripts use the L1Ntuple framework, which should be set up as described here:
 
 [https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideL1TStage2Instructions#Environment_Setup_with_Integrati](https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideL1TStage2Instructions#Environment_Setup_with_Integrati)
@@ -9,7 +9,7 @@ After setting up the L1Ntuple environment, issue the following:
 git clone git@github.com:cms-hcal-trigger/l1t-Validation.git HcalTrigger/l1t-Validation
 ```
 
-# HCAL conditions Validation at L1
+# HCAL conditions validation 
 Scripts for HCAL radiation damage correction validation.
 
 The script that submit CRAB jobs is called `submit_jobs.py`. Its required arguments are a good run lumimask, a dataset name, the new HcalL1TriggerObjects tag, and the storage site for the output. For example:
