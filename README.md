@@ -5,7 +5,7 @@ These scripts use the L1Ntuple framework, which should be set up as described he
 
 After setting up the L1Ntuple environment, issue the following:
 ```
-git clone git@github.com:cms-hcal-trigger/l1t-Validation.git HcalTrigger/l1t-Validation
+git clone git@github.com:cms-hcal-trigger/Validation.git HcalTrigger/Validation
 ```
 
 # HCAL conditions validation 
