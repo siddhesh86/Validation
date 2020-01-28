@@ -7,6 +7,7 @@
 #include "TChain.h"
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include "L1Trigger/L1TNtuples/interface/L1AnalysisEventDataFormat.h"
 #include "L1Trigger/L1TNtuples/interface/L1AnalysisL1UpgradeDataFormat.h"
@@ -28,7 +29,7 @@ nb: for 2&3 I have provided the info in runInfoForRates.txt
 */
 
 // configurable parameters
-double numBunch = 1537; //the number of bunches colliding for the run of interest
+double numBunch = 2544; //the number of bunches colliding for the run of interest
 double runLum = 0.02; // 0.44: 275783  0.58:  276363 //luminosity of the run of interest (*10^34)
 double expectedLum = 1.15; //expected luminosity of 2016 runs (*10^34)
 
@@ -172,9 +173,9 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
   float tauBinWidth = (tauHi-tauLo)/nTauBins;
 
   // htSum bins
-  int nHtSumBins = 600;
+  int nHtSumBins = 1000;
   float htSumLo = 0.;
-  float htSumHi = 600.;
+  float htSumHi = 1000.;
   float htSumBinWidth = (htSumHi-htSumLo)/nHtSumBins;
 
   // mhtSum bins
@@ -184,9 +185,9 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
   float mhtSumBinWidth = (mhtSumHi-mhtSumLo)/nMhtSumBins;
 
   // etSum bins
-  int nEtSumBins = 600;
+  int nEtSumBins = 1000;
   float etSumLo = 0.;
-  float etSumHi = 600.;
+  float etSumHi = 1000.;
   float etSumBinWidth = (etSumHi-etSumLo)/nEtSumBins;
 
   // metSum bins
@@ -207,17 +208,77 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
   float tpHi = 100.;
 
   std::string axR = ";Threshold E_{T} (GeV);rate (Hz)";
-  std::string axD = ";E_{T} (GeV);events/bin";
+  std::string axET = ";E_{T} (GeV);Events / bin";
+  std::string axHT = ";H_{T} (GeV);Events / bin";
+  std::string axMET = ";MET (GeV);Events / bin";
+  std::string axMHT = ";MHT (GeV);Events / bin";
+  std::string axMETHF = ";MET HF (GeV);Events / bin";
+
+  std::string axD = ";E_{T} (GeV);events/bin"; 
+  Double_t subdetbins[8] = {-28.5, -20.5, -16.5, -0.5, 0.5, 16.5, 20.5, 28.5};  
 
   //make histos
-  TH1F* jetRates50_ieta_emu = new TH1F("jetRates50_ieta_emu", ";i#eta;rate (Hz)", 28, 0.5, 28.5);
-  TH1F* jetRates112_ieta_emu = new TH1F("jetRates112_ieta_emu", ";i#eta;rate (Hz)", 28, 0.5, 28.5);
-  TH1F* jetRates180_ieta_emu = new TH1F("jetRates180_ieta_emu", ";i#eta;rate (Hz)", 28, 0.5, 28.5);
-  TH1F* jetRates64_ieta_emu = new TH1F("jetRates64_ieta_emu", ";i#eta;rate (Hz)", 28, 0.5, 28.5);
-  TH1F* jetRates76_ieta_emu = new TH1F("jetRates76_ieta_emu", ";i#eta;rate (Hz)", 28, 0.5, 28.5);
-  TH1F* jetRates92_ieta_emu = new TH1F("jetRates92_ieta_emu", ";i#eta;rate (Hz)", 28, 0.5, 28.5);
+  TH1F* singleJet12Rates_emu_ieta  = new TH1F("singleJet12Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* singleJet35Rates_emu_ieta  = new TH1F("singleJet35Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* singleJet60Rates_emu_ieta  = new TH1F("singleJet60Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* singleJet90Rates_emu_ieta  = new TH1F("singleJet90Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* singleJet120Rates_emu_ieta = new TH1F("singleJet120Rates_emu_ieta", ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* singleJet180Rates_emu_ieta = new TH1F("singleJet180Rates_emu_ieta", ";i#eta;A.U.", 57, -28.5, 28.5);
+
+  TH1F* doubleJet12Rates_emu_ieta  = new TH1F("doubleJet12Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* doubleJet35Rates_emu_ieta  = new TH1F("doubleJet35Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* doubleJet60Rates_emu_ieta  = new TH1F("doubleJet60Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* doubleJet90Rates_emu_ieta  = new TH1F("doubleJet90Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* doubleJet120Rates_emu_ieta = new TH1F("doubleJet120Rates_emu_ieta", ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* doubleJet180Rates_emu_ieta = new TH1F("doubleJet180Rates_emu_ieta", ";i#eta;A.U.", 57, -28.5, 28.5);
+
+  TH1F* tripleJet12Rates_emu_ieta  = new TH1F("tripleJet12Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* tripleJet35Rates_emu_ieta  = new TH1F("tripleJet35Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* tripleJet60Rates_emu_ieta  = new TH1F("tripleJet60Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* tripleJet90Rates_emu_ieta  = new TH1F("tripleJet90Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* tripleJet120Rates_emu_ieta = new TH1F("tripleJet120Rates_emu_ieta", ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* tripleJet180Rates_emu_ieta = new TH1F("tripleJet180Rates_emu_ieta", ";i#eta;A.U.", 57, -28.5, 28.5);
+
+  TH1F* quadJet12Rates_emu_ieta  = new TH1F("quadJet12Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* quadJet35Rates_emu_ieta  = new TH1F("quadJet35Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* quadJet60Rates_emu_ieta  = new TH1F("quadJet60Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* quadJet90Rates_emu_ieta  = new TH1F("quadJet90Rates_emu_ieta",  ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* quadJet120Rates_emu_ieta = new TH1F("quadJet120Rates_emu_ieta", ";i#eta;A.U.", 57, -28.5, 28.5);
+  TH1F* quadJet180Rates_emu_ieta = new TH1F("quadJet180Rates_emu_ieta", ";i#eta;A.U.", 57, -28.5, 28.5);
+
+  TH1F* singleJet12Rates_emu_sub  = (TH1F*)singleJet12Rates_emu_ieta->Rebin(7, "singleJet12Rates_emu_sub", subdetbins);
+  TH1F* singleJet35Rates_emu_sub  = (TH1F*)singleJet35Rates_emu_ieta->Rebin(7, "singleJet35Rates_emu_sub", subdetbins);
+  TH1F* singleJet60Rates_emu_sub  = (TH1F*)singleJet60Rates_emu_ieta->Rebin(7, "singleJet60Rates_emu_sub", subdetbins);
+  TH1F* singleJet90Rates_emu_sub  = (TH1F*)singleJet90Rates_emu_ieta->Rebin(7, "singleJet90Rates_emu_sub", subdetbins);
+  TH1F* singleJet120Rates_emu_sub = (TH1F*)singleJet120Rates_emu_ieta->Rebin(7, "singleJet120Rates_emu_sub", subdetbins);
+  TH1F* singleJet180Rates_emu_sub = (TH1F*)singleJet180Rates_emu_ieta->Rebin(7, "singleJet180Rates_emu_sub", subdetbins);
+                                                              
+  TH1F* doubleJet12Rates_emu_sub  = (TH1F*)doubleJet12Rates_emu_ieta->Rebin(7, "doubleJet12Rates_emu_sub", subdetbins);
+  TH1F* doubleJet35Rates_emu_sub  = (TH1F*)doubleJet35Rates_emu_ieta->Rebin(7, "doubleJet35Rates_emu_sub", subdetbins);
+  TH1F* doubleJet60Rates_emu_sub  = (TH1F*)doubleJet60Rates_emu_ieta->Rebin(7, "doubleJet60Rates_emu_sub", subdetbins);
+  TH1F* doubleJet90Rates_emu_sub  = (TH1F*)doubleJet90Rates_emu_ieta->Rebin(7, "doubleJet90Rates_emu_sub", subdetbins);
+  TH1F* doubleJet120Rates_emu_sub = (TH1F*)doubleJet120Rates_emu_ieta->Rebin(7, "doubleJet120Rates_emu_sub", subdetbins);
+  TH1F* doubleJet180Rates_emu_sub = (TH1F*)doubleJet180Rates_emu_ieta->Rebin(7, "doubleJet180Rates_emu_sub", subdetbins);
+                                                              
+  TH1F* tripleJet12Rates_emu_sub  = (TH1F*)tripleJet12Rates_emu_ieta->Rebin(7, "tripleJet12Rates_emu_sub", subdetbins);
+  TH1F* tripleJet35Rates_emu_sub  = (TH1F*)tripleJet35Rates_emu_ieta->Rebin(7, "tripleJet35Rates_emu_sub", subdetbins);
+  TH1F* tripleJet60Rates_emu_sub  = (TH1F*)tripleJet60Rates_emu_ieta->Rebin(7, "tripleJet60Rates_emu_sub", subdetbins);
+  TH1F* tripleJet90Rates_emu_sub  = (TH1F*)tripleJet90Rates_emu_ieta->Rebin(7, "tripleJet90Rates_emu_sub", subdetbins);
+  TH1F* tripleJet120Rates_emu_sub = (TH1F*)tripleJet120Rates_emu_ieta->Rebin(7, "tripleJet120Rates_emu_sub", subdetbins);
+  TH1F* tripleJet180Rates_emu_sub = (TH1F*)tripleJet180Rates_emu_ieta->Rebin(7, "tripleJet180Rates_emu_sub", subdetbins);
+                                                              
+  TH1F* quadJet12Rates_emu_sub    = (TH1F*)quadJet12Rates_emu_ieta->Rebin(7, "quadJet12Rates_emu_sub", subdetbins);
+  TH1F* quadJet35Rates_emu_sub    = (TH1F*)quadJet35Rates_emu_ieta->Rebin(7, "quadJet35Rates_emu_sub", subdetbins);
+  TH1F* quadJet60Rates_emu_sub    = (TH1F*)quadJet60Rates_emu_ieta->Rebin(7, "quadJet60Rates_emu_sub", subdetbins);
+  TH1F* quadJet90Rates_emu_sub    = (TH1F*)quadJet90Rates_emu_ieta->Rebin(7, "quadJet90Rates_emu_sub", subdetbins);
+  TH1F* quadJet120Rates_emu_sub   = (TH1F*)quadJet120Rates_emu_ieta->Rebin(7, "quadJet120Rates_emu_sub", subdetbins);
+  TH1F* quadJet180Rates_emu_sub   = (TH1F*)quadJet180Rates_emu_ieta->Rebin(7, "quadJet180Rates_emu_sub", subdetbins);
 
   TH1F* singleJetRates_emu = new TH1F("singleJetRates_emu", axR.c_str(), nJetBins, jetLo, jetHi);
+  TH1F* singleJetRates_emu_HB  = new TH1F("singleJetRates_emu_HB", axR.c_str(), nJetBins, jetLo, jetHi);
+  TH1F* singleJetRates_emu_HE1 = new TH1F("singleJetRates_emu_HE1", axR.c_str(), nJetBins, jetLo, jetHi);
+  TH1F* singleJetRates_emu_HE2 = new TH1F("singleJetRates_emu_HE2", axR.c_str(), nJetBins, jetLo, jetHi);
+
   TH1F* doubleJetRates_emu = new TH1F("doubleJetRates_emu", axR.c_str(), nJetBins, jetLo, jetHi);
   TH1F* tripleJetRates_emu = new TH1F("tripleJetRates_emu", axR.c_str(), nJetBins, jetLo, jetHi);
   TH1F* quadJetRates_emu = new TH1F("quadJetRates_emu", axR.c_str(), nJetBins, jetLo, jetHi);
@@ -230,37 +291,17 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
   TH1F* singleISOTauRates_emu = new TH1F("singleISOTauRates_emu", axR.c_str(), nTauBins, tauLo, tauHi);
   TH1F* doubleISOTauRates_emu = new TH1F("doubleISOTauRates_emu", axR.c_str(), nTauBins, tauLo, tauHi);
 
-  TH1F* singleJetRates_emu_HB = new TH1F("singleJetRates_emu_HB", axR.c_str(), nJetBins, jetLo, jetHi);
-  TH1F* doubleJetRates_emu_HB = new TH1F("doubleJetRates_emu_HB", axR.c_str(), nJetBins, jetLo, jetHi);
-  TH1F* tripleJetRates_emu_HB = new TH1F("tripleJetRates_emu_HB", axR.c_str(), nJetBins, jetLo, jetHi);
-  TH1F* quadJetRates_emu_HB = new TH1F("quadJetRates_emu_HB", axR.c_str(), nJetBins, jetLo, jetHi);
-  TH1F* singleEgRates_emu_HB = new TH1F("singleEgRates_emu_HB", axR.c_str(), nEgBins, egLo, egHi);
-  TH1F* doubleEgRates_emu_HB = new TH1F("doubleEgRates_emu_HB", axR.c_str(), nEgBins, egLo, egHi);
-  TH1F* singleTauRates_emu_HB = new TH1F("singleTauRates_emu_HB", axR.c_str(), nTauBins, tauLo, tauHi);
-  TH1F* doubleTauRates_emu_HB = new TH1F("doubleTauRates_emu_HB", axR.c_str(), nTauBins, tauLo, tauHi);
-  TH1F* singleISOEgRates_emu_HB = new TH1F("singleISOEgRates_emu_HB", axR.c_str(), nEgBins, egLo, egHi);
-  TH1F* doubleISOEgRates_emu_HB = new TH1F("doubleISOEgRates_emu_HB", axR.c_str(), nEgBins, egLo, egHi);
-  TH1F* singleISOTauRates_emu_HB = new TH1F("singleISOTauRates_emu_HB", axR.c_str(), nTauBins, tauLo, tauHi);
-  TH1F* doubleISOTauRates_emu_HB = new TH1F("doubleISOTauRates_emu_HB", axR.c_str(), nTauBins, tauLo, tauHi);
-
-  TH1F* singleJetRates_emu_HE = new TH1F("singleJetRates_emu_HE", axR.c_str(), nJetBins, jetLo, jetHi);
-  TH1F* doubleJetRates_emu_HE = new TH1F("doubleJetRates_emu_HE", axR.c_str(), nJetBins, jetLo, jetHi);
-  TH1F* tripleJetRates_emu_HE = new TH1F("tripleJetRates_emu_HE", axR.c_str(), nJetBins, jetLo, jetHi);
-  TH1F* quadJetRates_emu_HE = new TH1F("quadJetRates_emu_HE", axR.c_str(), nJetBins, jetLo, jetHi);
-  TH1F* singleEgRates_emu_HE = new TH1F("singleEgRates_emu_HE", axR.c_str(), nEgBins, egLo, egHi);
-  TH1F* doubleEgRates_emu_HE = new TH1F("doubleEgRates_emu_HE", axR.c_str(), nEgBins, egLo, egHi);
-  TH1F* singleTauRates_emu_HE = new TH1F("singleTauRates_emu_HE", axR.c_str(), nTauBins, tauLo, tauHi);
-  TH1F* doubleTauRates_emu_HE = new TH1F("doubleTauRates_emu_HE", axR.c_str(), nTauBins, tauLo, tauHi);
-  TH1F* singleISOEgRates_emu_HE = new TH1F("singleISOEgRates_emu_HE", axR.c_str(), nEgBins, egLo, egHi);
-  TH1F* doubleISOEgRates_emu_HE = new TH1F("doubleISOEgRates_emu_HE", axR.c_str(), nEgBins, egLo, egHi);
-  TH1F* singleISOTauRates_emu_HE = new TH1F("singleISOTauRates_emu_HE", axR.c_str(), nTauBins, tauLo, tauHi);
-  TH1F* doubleISOTauRates_emu_HE = new TH1F("doubleISOTauRates_emu_HE", axR.c_str(), nTauBins, tauLo, tauHi);
-
   TH1F* htSumRates_emu = new TH1F("htSumRates_emu",axR.c_str(), nHtSumBins, htSumLo, htSumHi);
   TH1F* mhtSumRates_emu = new TH1F("mhtSumRates_emu",axR.c_str(), nMhtSumBins, mhtSumLo, mhtSumHi);
   TH1F* etSumRates_emu = new TH1F("etSumRates_emu",axR.c_str(), nEtSumBins, etSumLo, etSumHi);
   TH1F* metSumRates_emu = new TH1F("metSumRates_emu",axR.c_str(), nMetSumBins, metSumLo, metSumHi); 
   TH1F* metHFSumRates_emu = new TH1F("metHFSumRates_emu",axR.c_str(), nMetHFSumBins, metHFSumLo, metHFSumHi); 
+
+  TH1F* htSum_emu = new TH1F("htSum_emu",axHT.c_str(), nHtSumBins, htSumLo, htSumHi);
+  TH1F* mhtSum_emu = new TH1F("mhtSum_emu",axMHT.c_str(), nMhtSumBins, mhtSumLo, mhtSumHi);
+  TH1F* etSum_emu = new TH1F("etSum_emu",axET.c_str(), nEtSumBins, etSumLo, etSumHi);
+  TH1F* metSum_emu = new TH1F("metSum_emu",axMET.c_str(), nMetSumBins, metSumLo, metSumHi); 
+  TH1F* metHFSum_emu = new TH1F("metHFSum_emu",axMETHF.c_str(), nMetHFSumBins, metHFSumLo, metHFSumHi); 
   
   TH1F* singleJetRates_hw = new TH1F("singleJetRates_hw", axR.c_str(), nJetBins, jetLo, jetHi);
   TH1F* doubleJetRates_hw = new TH1F("doubleJetRates_hw", axR.c_str(), nJetBins, jetLo, jetHi);
@@ -281,9 +322,6 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
   TH1F* metHFSumRates_hw = new TH1F("metHFSumRates_hw",axR.c_str(), nMetHFSumBins, metHFSumLo, metHFSumHi); 
 
   TH1F* hcalTP_emu = new TH1F("hcalTP_emu", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
-  TH1F* hcalTP_emu_HB = new TH1F("hcalTP_emu_HB", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
-  TH1F* hcalTP_emu_HE = new TH1F("hcalTP_emu_HE", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
-
   TH1F* ecalTP_emu = new TH1F("ecalTP_emu", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
 
   TH1F* hcalTP_hw = new TH1F("hcalTP_hw", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
@@ -305,230 +343,253 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
       //do routine for L1 emulator quantites
       if (emuOn){
 
-        treeL1TPemu->GetEntry(jentry);
-        double tpEt(0.);
-        int tpIeta(0);
+          treeL1TPemu->GetEntry(jentry);
+          double tpEt(0.);
         
-      for(int i=0; i < l1TPemu_->nHCALTP; i++){
-	      tpEt = l1TPemu_->hcalTPet[i];
-          tpIeta = l1TPemu_->hcalTPieta[i];
-          hcalTP_emu->Fill(tpEt);
-          if (abs(tpIeta) <= 16) { hcalTP_emu_HB->Fill(tpEt); }
-          else if (abs(tpIeta) > 16 && abs(tpIeta) <= 28) { hcalTP_emu_HE->Fill(tpEt); }
-      }
-      for(int i=0; i < l1TPemu_->nECALTP; i++){
-	      tpEt = l1TPemu_->ecalTPet[i];
-	      ecalTP_emu->Fill(tpEt);
-      }
+          for(int i=0; i < l1TPemu_->nHCALTP; i++){
+	          tpEt = l1TPemu_->hcalTPet[i];
+              hcalTP_emu->Fill(tpEt);
+          }
+          for(int i=0; i < l1TPemu_->nECALTP; i++){
+	          tpEt = l1TPemu_->ecalTPet[i];
+	          ecalTP_emu->Fill(tpEt);
+          }
 
-      treeL1emu->GetEntry(jentry);
+          treeL1emu->GetEntry(jentry);
 
-      for (unsigned int i = 0; i < l1emu_->nJets; i++) {
+          // get jetEt*, egEt*, tauEt, htSum, mhtSum, etSum, metSum
+          // ALL EMU OBJECTS HAVE BX=0...
+          double jetEt_1 = 0; int jetIeta_1 = 0; //int jetAieta_1 = 0;
+          double jetEt_2 = 0; int jetIeta_2 = 0; 
+          double jetEt_3 = 0; int jetIeta_3 = 0; 
+          double jetEt_4 = 0; int jetIeta_4 = 0; 
+          //std::cout << std::endl;
+          if (l1emu_->nJets>0) {
+              jetEt_1 = l1emu_->jetEt[0]; jetIeta_1 = l1emu_->jetTowerIEta[0];
+//              std::cout << "(IETA, PT) OF JET1: (" << jetIeta_1 << ", " << jetEt_1 << ")" << std::endl;
+              if (jetEt_1 > 12)  { singleJet12Rates_emu_ieta->Fill(jetIeta_1); singleJet12Rates_emu_sub->Fill(jetIeta_1);}
+              if (jetEt_1 > 35)  { singleJet35Rates_emu_ieta->Fill(jetIeta_1); singleJet35Rates_emu_sub->Fill(jetIeta_1);}
+              if (jetEt_1 > 60)  { singleJet60Rates_emu_ieta->Fill(jetIeta_1); singleJet60Rates_emu_sub->Fill(jetIeta_1);}
+              if (jetEt_1 > 90)  { singleJet90Rates_emu_ieta->Fill(jetIeta_1); singleJet90Rates_emu_sub->Fill(jetIeta_1);}
+              if (jetEt_1 > 120) { singleJet120Rates_emu_ieta->Fill(jetIeta_1); singleJet120Rates_emu_sub->Fill(jetIeta_1);}
+              if (jetEt_1 > 180) { singleJet180Rates_emu_ieta->Fill(jetIeta_1); singleJet180Rates_emu_sub->Fill(jetIeta_1);}
+          }
+          if (l1emu_->nJets>1) {
+              jetEt_2 = l1emu_->jetEt[1]; jetIeta_2 = l1emu_->jetTowerIEta[1];
 
-          double jetEt = l1emu_->jetEt[i]; int jetIeta = abs(l1emu_->jetIeta[i]);
+//              std::cout << "(IETA, PT) OF JET2: (" << jetIeta_2 << ", " << jetEt_2 << ")" << std::endl;
 
-          if (jetEt > 50) { jetRates50_ieta_emu->Fill(jetIeta);
-          if (jetEt > 64) { jetRates64_ieta_emu->Fill(jetIeta);
-          if (jetEt > 76) { jetRates76_ieta_emu->Fill(jetIeta);
-          if (jetEt > 92) { jetRates92_ieta_emu->Fill(jetIeta);
-          if (jetEt > 112) { jetRates112_ieta_emu->Fill(jetIeta);
-          if (jetEt > 180) { jetRates180_ieta_emu->Fill(jetIeta);
+              if (jetEt_2 > 12)  { doubleJet12Rates_emu_ieta->Fill(jetIeta_2); doubleJet12Rates_emu_sub->Fill(jetIeta_2);}
+              if (jetEt_2 > 35)  { doubleJet35Rates_emu_ieta->Fill(jetIeta_2); doubleJet35Rates_emu_sub->Fill(jetIeta_2);}
+              if (jetEt_2 > 60)  { doubleJet60Rates_emu_ieta->Fill(jetIeta_2); doubleJet60Rates_emu_sub->Fill(jetIeta_2);}
+              if (jetEt_2 > 90)  { doubleJet90Rates_emu_ieta->Fill(jetIeta_2); doubleJet90Rates_emu_sub->Fill(jetIeta_2);}
+              if (jetEt_2 > 120) { doubleJet120Rates_emu_ieta->Fill(jetIeta_2); doubleJet120Rates_emu_sub->Fill(jetIeta_2);}
+              if (jetEt_2 > 180) { doubleJet180Rates_emu_ieta->Fill(jetIeta_2); doubleJet180Rates_emu_sub->Fill(jetIeta_2);}
+          }
+          if (l1emu_->nJets>2) {
+              jetEt_3 = l1emu_->jetEt[2]; jetIeta_3 = l1emu_->jetTowerIEta[2];
+//              std::cout << "(IETA, PT) OF JET3: (" << jetIeta_3 << ", " << jetEt_3 << ")" << std::endl;
 
-      }
+              if (jetEt_3 > 12)  { tripleJet12Rates_emu_ieta->Fill(jetIeta_3); tripleJet12Rates_emu_sub->Fill(jetIeta_3);}
+              if (jetEt_3 > 35)  { tripleJet35Rates_emu_ieta->Fill(jetIeta_3); tripleJet35Rates_emu_sub->Fill(jetIeta_3);}
+              if (jetEt_3 > 60)  { tripleJet60Rates_emu_ieta->Fill(jetIeta_3); tripleJet60Rates_emu_sub->Fill(jetIeta_3);}
+              if (jetEt_3 > 90)  { tripleJet90Rates_emu_ieta->Fill(jetIeta_3); tripleJet90Rates_emu_sub->Fill(jetIeta_3);}
+              if (jetEt_3 > 120) { tripleJet120Rates_emu_ieta->Fill(jetIeta_3); tripleJet120Rates_emu_sub->Fill(jetIeta_3);}
+              if (jetEt_3 > 180) { tripleJet180Rates_emu_ieta->Fill(jetIeta_3); tripleJet180Rates_emu_sub->Fill(jetIeta_3);}
+          }
+          if (l1emu_->nJets>3) {
+              jetEt_4 = l1emu_->jetEt[3]; jetIeta_4 = l1emu_->jetTowerIEta[3];
 
-      // get jetEt*, egEt*, tauEt, htSum, mhtSum, etSum, metSum
-      // ALL EMU OBJECTS HAVE BX=0...
-      double jetEt_1 = 0; unsigned int jetIeta_1 = 0;
-      double jetEt_2 = 0; unsigned int jetIeta_2 = 0;
-      double jetEt_3 = 0; unsigned int jetIeta_3 = 0;
-      double jetEt_4 = 0; unsigned int jetIeta_4 = 0;
-      if (l1emu_->nJets>0) { jetEt_1 = l1emu_->jetEt[0]; jetIeta_1 = abs(l1emu_->jetIEta[0]); }
-      if (l1emu_->nJets>1) { jetEt_2 = l1emu_->jetEt[1]; jetIeta_2 = abs(l1emu_->jetIEta[1]); }
-      if (l1emu_->nJets>2) { jetEt_3 = l1emu_->jetEt[2]; jetIeta_3 = abs(l1emu_->jetIEta[2]); }
-      if (l1emu_->nJets>3) { jetEt_4 = l1emu_->jetEt[3]; jetIeta_4 = abs(l1emu_->jetIEta[3]); }       
-      
-      double egEt_1 = 0; unsigned int egIeta_1 = 0;
-      double egEt_2 = 0; unsigned int egIeta_2 = 0;
-      //EG pt's are not given in descending order...bx?
-      for (UInt_t c=0; c<l1emu_->nEGs; c++){
-        if (l1emu_->egEt[c] > egEt_1){
-          egEt_2 = egEt_1; egIeta_2 = egIeta_1;
-          egEt_1 = l1emu_->egEt[c]; egIeta_1 = abs(l1emu_->egIEta[c]);
-        }
-        else if (l1emu_->egEt[c] <= egEt_1 && l1emu_->egEt[c] > egEt_2){
-          egEt_2 = l1emu_->egEt[c]; egIeta_2 = abs(l1emu_->egIEta[c]);
-        }
-      }
+//              std::cout << "(IETA, PT) OF JET4: (" << jetIeta_4 << ", " << jetEt_4 << ")" << std::endl;
 
-      double tauEt_1 = 0; unsigned int tauIeta_1 = 0;
-      double tauEt_2 = 0; unsigned int tauIeta_2 = 0;
-      //tau pt's are not given in descending order
-      for (UInt_t c=0; c<l1emu_->nTaus; c++){
-        if (l1emu_->tauEt[c] > tauEt_1){
-          tauEt_2 = tauEt_1; tauIeta_2 = tauIeta_1;
-          tauEt_1 = l1emu_->tauEt[c]; tauIeta_1 = abs(l1emu_->tauIEta[c]);
-        }
-        else if (l1emu_->tauEt[c] <= tauEt_1 && l1emu_->tauEt[c] > tauEt_2){
-          tauEt_2 = l1emu_->tauEt[c]; tauIeta_2 = abs(l1emu_->tauIEta[c]);
-        }
-      }
+              if (jetEt_4 > 12)  { quadJet12Rates_emu_ieta->Fill(jetIeta_4); quadJet12Rates_emu_sub->Fill(jetIeta_4);}
+              if (jetEt_4 > 35)  { quadJet35Rates_emu_ieta->Fill(jetIeta_4); quadJet35Rates_emu_sub->Fill(jetIeta_4);}
+              if (jetEt_4 > 60)  { quadJet60Rates_emu_ieta->Fill(jetIeta_4); quadJet60Rates_emu_sub->Fill(jetIeta_4);}
+              if (jetEt_4 > 90)  { quadJet90Rates_emu_ieta->Fill(jetIeta_4); quadJet90Rates_emu_sub->Fill(jetIeta_4);}
+              if (jetEt_4 > 120) { quadJet120Rates_emu_ieta->Fill(jetIeta_4); quadJet120Rates_emu_sub->Fill(jetIeta_4);}
+              if (jetEt_4 > 180) { quadJet180Rates_emu_ieta->Fill(jetIeta_4); quadJet180Rates_emu_sub->Fill(jetIeta_4);}
+          }       
 
-      double egISOEt_1 = 0; unsigned int egISOIeta_1 = 0;
-      double egISOEt_2 = 0; unsigned int egISOIeta_2 = 0;
-      //EG pt's are not given in descending order...bx?
-      for (UInt_t c=0; c<l1emu_->nEGs; c++){
-        if (l1emu_->egEt[c] > egISOEt_1 && l1emu_->egIso[c]==1){
-          egISOEt_2 = egISOEt_1; egISOIeta_2 = egISOIeta_1;
-          egISOEt_1 = l1emu_->egEt[c]; egISOIeta_1 = abs(l1emu_->egIEta[c]);
-        }
-        else if (l1emu_->egEt[c] <= egISOEt_1 && l1emu_->egEt[c] > egISOEt_2 && l1emu_->egIso[c]==1){
-          egISOEt_2 = l1emu_->egEt[c]; egISOIeta_2 = abs(l1emu_->egIEta[c]);
-        }
-      }
+          double egEt_1 = 0;
+          double egEt_2 = 0;
+          //EG pt's are not given in descending order...bx?
+          for (UInt_t c=0; c<l1emu_->nEGs; c++){
+            if (l1emu_->egEt[c] > egEt_1){
+              egEt_2 = egEt_1;
+              egEt_1 = l1emu_->egEt[c];
+            }
+            else if (l1emu_->egEt[c] <= egEt_1 && l1emu_->egEt[c] > egEt_2){
+              egEt_2 = l1emu_->egEt[c];
+            }
+          }
 
-      double tauISOEt_1 = 0; unsigned int tauISOIeta_1 = 0;
-      double tauISOEt_2 = 0; unsigned int tauISOIeta_2 = 0;
-      //tau pt's are not given in descending order
-      for (UInt_t c=0; c<l1emu_->nTaus; c++){
-        if (l1emu_->tauEt[c] > tauISOEt_1 && l1emu_->tauIso[c]>0){
-          tauISOEt_2 = tauISOEt_1; tauISOIeta_2 = tauISOIeta_1;
-          tauISOEt_1 = l1emu_->tauEt[c]; tauISOIeta_1 = abs(l1emu_->tauIEta[c]);
-        }
-        else if (l1emu_->tauEt[c] <= tauISOEt_1 && l1emu_->tauEt[c] > tauISOEt_2 && l1emu_->tauIso[c]>0){
-          tauISOEt_2 = l1emu_->tauEt[c]; tauISOIeta_2 = abs(l1emu_->tauIEta[c]);
-        }
-      }
+          double tauEt_1 = 0;
+          double tauEt_2 = 0;
+          //tau pt's are not given in descending order
+          for (UInt_t c=0; c<l1emu_->nTaus; c++){
+            if (l1emu_->tauEt[c] > tauEt_1){
+              tauEt_2 = tauEt_1;
+              tauEt_1 = l1emu_->tauEt[c];
+            }
+            else if (l1emu_->tauEt[c] <= tauEt_1 && l1emu_->tauEt[c] > tauEt_2){
+              tauEt_2 = l1emu_->tauEt[c];
+            }
+          }
 
-      double htSum(0.0);
-      double mhtSum(0.0);
-      double etSum(0.0);
-      double metSum(0.0);
-      double metHFSum(0.0);
-      for (unsigned int c=0; c<l1emu_->nSums; c++){
-          if( l1emu_->sumBx[c] != 0 ) continue;
-          if( l1emu_->sumType[c] == L1Analysis::kTotalEt ) etSum = l1emu_->sumEt[c];
-          if( l1emu_->sumType[c] == L1Analysis::kTotalHt ) htSum = l1emu_->sumEt[c];
-          if( l1emu_->sumType[c] == L1Analysis::kMissingEt ) metSum = l1emu_->sumEt[c];
-	      if( l1emu_->sumType[c] == L1Analysis::kMissingEtHF ) metHFSum = l1emu_->sumEt[c];
-          if( l1emu_->sumType[c] == L1Analysis::kMissingHt ) mhtSum = l1emu_->sumEt[c];
-      }
+          double egISOEt_1 = 0;
+          double egISOEt_2 = 0;
+          //EG pt's are not given in descending order...bx?
+          for (UInt_t c=0; c<l1emu_->nEGs; c++){
+            if (l1emu_->egEt[c] > egISOEt_1 && l1emu_->egIso[c]==1){
+              egISOEt_2 = egISOEt_1;
+              egISOEt_1 = l1emu_->egEt[c];
+            }
+            else if (l1emu_->egEt[c] <= egISOEt_1 && l1emu_->egEt[c] > egISOEt_2 && l1emu_->egIso[c]==1){
+              egISOEt_2 = l1emu_->egEt[c];
+            }
+          }
 
-      // for each bin fill according to whether our object has a larger corresponding energy
-      for(int bin=0; bin<nJetBins; bin++){
-        if( (jetEt_1) >= jetLo + (bin*jetBinWidth) ) {
-         singleJetRates_emu->Fill(jetLo+(bin*jetBinWidth));  //GeV
-         if (jetIeta_1 <= 16) { singleJetRates_emu_HB->Fill(jetLo+(bin*jetBinWidth));}
-         else if (jetIeta_1 > 16 && jetIeta_1 <= 28) { singleJetRates_emu_HE->Fill(jetLo+(bin*jetBinWidth));}
-        }
-      } 
+          double tauISOEt_1 = 0;
+          double tauISOEt_2 = 0;
+          //tau pt's are not given in descending order
+          for (UInt_t c=0; c<l1emu_->nTaus; c++){
+            if (l1emu_->tauEt[c] > tauISOEt_1 && l1emu_->tauIso[c]>0){
+              tauISOEt_2 = tauISOEt_1;
+              tauISOEt_1 = l1emu_->tauEt[c];
+            }
+            else if (l1emu_->tauEt[c] <= tauISOEt_1 && l1emu_->tauEt[c] > tauISOEt_2 && l1emu_->tauIso[c]>0){
+              tauISOEt_2 = l1emu_->tauEt[c];
+            }
+          }
 
-      for(int bin=0; bin<nJetBins; bin++){
-        if( (jetEt_2) >= jetLo + (bin*jetBinWidth) ) {
-         doubleJetRates_emu->Fill(jetLo+(bin*jetBinWidth));  //GeV
-         if (jetIeta_2 <= 16) { doubleJetRates_emu_HB->Fill(jetLo+(bin*jetBinWidth));}
-         else if (jetIeta_2 > 16 && jetIeta_2 <= 28) { doubleJetRates_emu_HE->Fill(jetLo+(bin*jetBinWidth));}
-        }
-      }  
+          double htSum(0.0);
+          double mhtSum(0.0);
+          double etSum(0.0);
+          double metSum(0.0);
+          double metHFSum(0.0);
+          for (unsigned int c=0; c<l1emu_->nSums; c++){
+              if( l1emu_->sumBx[c] != 0 ) continue;
+              if( l1emu_->sumType[c] == L1Analysis::kTotalEt ) etSum = l1emu_->sumEt[c];
+              if( l1emu_->sumType[c] == L1Analysis::kTotalHt ) htSum = l1emu_->sumEt[c];
+              if( l1emu_->sumType[c] == L1Analysis::kMissingEt ) metSum = l1emu_->sumEt[c];
+	          if( l1emu_->sumType[c] == L1Analysis::kMissingEtHF ) metHFSum = l1emu_->sumEt[c];
+              if( l1emu_->sumType[c] == L1Analysis::kMissingHt ) mhtSum = l1emu_->sumEt[c];
+          }
+          htSum_emu->Fill(htSum);
+          mhtSum_emu->Fill(mhtSum);
+          etSum_emu->Fill(etSum);
+          metSum_emu->Fill(metSum);
+          metHFSum_emu->Fill(metHFSum);
 
-      for(int bin=0; bin<nJetBins; bin++){
-        if( (jetEt_3) >= jetLo + (bin*jetBinWidth) ) {
-            tripleJetRates_emu->Fill(jetLo+(bin*jetBinWidth));  //GeV
-            if (jetIeta_3 <= 16) {tripleJetRates_emu_HB->Fill(jetLo+(bin*jetBinWidth)) ;}
-            else if (jetIeta_3 > 16 &&jetIeta_3 <= 28) {tripleJetRates_emu_HE->Fill(jetLo+(bin*jetBinWidth)) ;}
-        }
-      }  
+          for(int bin=0; bin<nJetBins; bin++){
+            if( (jetEt_1 ) >= jetLo + (bin*jetBinWidth) ) {
+               singleJetRates_emu->Fill(jetLo+(bin*jetBinWidth));  //GeV
+            }
+          }
 
-      for(int bin=0; bin<nJetBins; bin++){
-        if( (jetEt_4) >= jetLo + (bin*jetBinWidth) ) {
-            quadJetRates_emu->Fill(jetLo+(bin*jetBinWidth));  //GeV
-            if (jetIeta_4 <= 16) {quadJetRates_emu_HB->Fill(jetLo+(bin*jetBinWidth)) ;}
-            else if (jetIeta_4 > 16 &&jetIeta_4 <= 28) {quadJetRates_emu_HE->Fill(jetLo+(bin*jetBinWidth)) ;}
-        }
-      }  
-             
-      for(int bin=0; bin<nEgBins; bin++){
-        if( (egEt_1) >= egLo + (bin*egBinWidth) ) {
-         singleEgRates_emu->Fill(egLo+(bin*egBinWidth));  //GeV
-        if (egIeta_1<=16) {singleEgRates_emu_HB->Fill(egLo+(bin*egBinWidth)) ;}
-        else if (egIeta_1>16&&egIeta_1<= 28) {singleEgRates_emu_HE->Fill(egLo+(bin*egBinWidth)) ;}
-        }
-      } 
+          // for each bin fill according to whether our object has a larger corresponding energy
+          //std::cout << std::endl;
+          for (int ijet = 0; ijet < l1emu_->nJets; ijet++) {
+              double jetEt = l1emu_->jetEt[ijet]; int jetIeta = l1emu_->jetTowerIEta[ijet]; int jetAieta = fabs(jetIeta); //int jetIphi = l1emu_->jetTowerIPhi[ijet];
+              //std::cout << "(IETA, PHI, PT) OF JET" << ijet << ": (" << jetIeta << ", " << jetIphi << ", " << jetEt << ")" << std::endl;
+              for(int bin=0; bin<nJetBins; bin++){
+                  if( (jetEt ) >= jetLo + (bin*jetBinWidth) ) {
+                      if (jetAieta > 0 && jetAieta <= 16) {
+                          singleJetRates_emu_HB->Fill(jetLo+(bin*jetBinWidth));  //GeV
+                      } else if (jetAieta > 16 && jetAieta <= 20) {
+                          singleJetRates_emu_HE1->Fill(jetLo+(bin*jetBinWidth));  //GeV
+                      } else if (jetAieta > 20 && jetAieta <= 28) {
+                          singleJetRates_emu_HE2->Fill(jetLo+(bin*jetBinWidth));  //GeV
+                      }
+                  }
+              }
+          }
 
-      for(int bin=0; bin<nEgBins; bin++){
-        if( (egEt_2) >= egLo + (bin*egBinWidth) ) {
-         doubleEgRates_emu->Fill(egLo+(bin*egBinWidth));  //GeV
-        if (egIeta_2<=16) {doubleEgRates_emu_HB->Fill(egLo+(bin*egBinWidth)) ;}
-        else if (egIeta_2>16&&egIeta_2<= 28) {doubleEgRates_emu_HE->Fill(egLo+(bin*egBinWidth)) ;}
-        }
-      }  
+          for(int bin=0; bin<nJetBins; bin++){
+            if( (jetEt_2) >= jetLo + (bin*jetBinWidth) ) {
+             doubleJetRates_emu->Fill(jetLo+(bin*jetBinWidth));  //GeV
+            }
+          }  
 
-      for(int bin=0; bin<nTauBins; bin++){
-        if( (tauEt_1) >= tauLo + (bin*tauBinWidth) ) {
-         singleTauRates_emu->Fill(tauLo+(bin*tauBinWidth));  //GeV
-        if (tauIeta_1<=16) {singleTauRates_emu_HB->Fill(tauLo+(bin*tauBinWidth)) ;}
-        else if (tauIeta_1>16&&tauIeta_1<= 28) {singleTauRates_emu_HE->Fill(tauLo+(bin*tauBinWidth)) ;}
-        }
-      }
+          for(int bin=0; bin<nJetBins; bin++){
+            if( (jetEt_3) >= jetLo + (bin*jetBinWidth) ) {
+                tripleJetRates_emu->Fill(jetLo+(bin*jetBinWidth));  //GeV
+            }
+          }  
 
-      for(int bin=0; bin<nTauBins; bin++){
-        if( (tauEt_2) >= tauLo + (bin*tauBinWidth) ) {
-         doubleTauRates_emu->Fill(tauLo+(bin*tauBinWidth));  //GeV
-        if (tauIeta_2<=16) {doubleTauRates_emu_HB->Fill(tauLo+(bin*tauBinWidth)) ;}
-        else if (tauIeta_2>16&&tauIeta_2<= 28) {doubleTauRates_emu_HE->Fill(tauLo+(bin*tauBinWidth)) ;}
-        }
-      } 
+          for(int bin=0; bin<nJetBins; bin++){
+            if( (jetEt_4) >= jetLo + (bin*jetBinWidth) ) {
+                quadJetRates_emu->Fill(jetLo+(bin*jetBinWidth));  //GeV
+            }
+          }  
+                 
+          for(int bin=0; bin<nEgBins; bin++){
+            if( (egEt_1) >= egLo + (bin*egBinWidth) ) {
+             singleEgRates_emu->Fill(egLo+(bin*egBinWidth));  //GeV
+            }
+          } 
 
-      for(int bin=0; bin<nEgBins; bin++){
-        if( (egISOEt_1) >= egLo + (bin*egBinWidth) ) {
-         singleISOEgRates_emu->Fill(egLo+(bin*egBinWidth));  //GeV
-        if (egISOIeta_1<=16) {singleISOEgRates_emu_HB->Fill(egLo+(bin*egBinWidth)) ;}
-        else if (egISOIeta_1>16&&egISOIeta_1<= 28) {singleISOEgRates_emu_HE->Fill(egLo+(bin*egBinWidth)) ;}
-        }
-      } 
+          for(int bin=0; bin<nEgBins; bin++){
+            if( (egEt_2) >= egLo + (bin*egBinWidth) ) {
+             doubleEgRates_emu->Fill(egLo+(bin*egBinWidth));  //GeV
+            }
+          }  
 
-      for(int bin=0; bin<nEgBins; bin++){
-        if( (egISOEt_2) >= egLo + (bin*egBinWidth) ) {
-         doubleISOEgRates_emu->Fill(egLo+(bin*egBinWidth));  //GeV
-        if (egISOIeta_2<=16) {doubleISOEgRates_emu_HB->Fill(egLo+(bin*egBinWidth)) ;}
-        else if (egISOIeta_2>16&&egISOIeta_2<= 28) {doubleISOEgRates_emu_HE->Fill(egLo+(bin*egBinWidth)) ;}
-        }
-      }  
+          for(int bin=0; bin<nTauBins; bin++){
+            if( (tauEt_1) >= tauLo + (bin*tauBinWidth) ) {
+             singleTauRates_emu->Fill(tauLo+(bin*tauBinWidth));  //GeV
+            }
+          }
 
-      for(int bin=0; bin<nTauBins; bin++){
-        if( (tauISOEt_1) >= tauLo + (bin*tauBinWidth) ) {
-         singleISOTauRates_emu->Fill(tauLo+(bin*tauBinWidth));  //GeV
-        if (tauISOIeta_1<=16) {singleISOTauRates_emu_HB->Fill(tauLo+(bin*tauBinWidth)) ;}
-        else if (tauISOIeta_1>16&&tauISOIeta_1<= 28) {singleISOTauRates_emu_HE->Fill(tauLo+(bin*tauBinWidth)) ;}
-        }
-      }
+          for(int bin=0; bin<nTauBins; bin++){
+            if( (tauEt_2) >= tauLo + (bin*tauBinWidth) ) {
+             doubleTauRates_emu->Fill(tauLo+(bin*tauBinWidth));  //GeV
+            }
+          } 
 
-      for(int bin=0; bin<nTauBins; bin++){
-        if( (tauISOEt_2) >= tauLo + (bin*tauBinWidth) ) {
-         doubleISOTauRates_emu->Fill(tauLo+(bin*tauBinWidth));  //GeV
-        if (tauISOIeta_2<=16) {doubleISOTauRates_emu_HB->Fill(tauLo+(bin*tauBinWidth)) ;}
-        else if (tauISOIeta_2>16&&tauISOIeta_2<= 28) {doubleISOTauRates_emu_HE->Fill(tauLo+(bin*tauBinWidth)) ;}
-        }
-      } 
+          for(int bin=0; bin<nEgBins; bin++){
+            if( (egISOEt_1) >= egLo + (bin*egBinWidth) ) {
+             singleISOEgRates_emu->Fill(egLo+(bin*egBinWidth));  //GeV
+            }
+          } 
+
+          for(int bin=0; bin<nEgBins; bin++){
+            if( (egISOEt_2) >= egLo + (bin*egBinWidth) ) {
+             doubleISOEgRates_emu->Fill(egLo+(bin*egBinWidth));  //GeV
+            }
+          }  
+
+          for(int bin=0; bin<nTauBins; bin++){
+            if( (tauISOEt_1) >= tauLo + (bin*tauBinWidth) ) {
+             singleISOTauRates_emu->Fill(tauLo+(bin*tauBinWidth));  //GeV
+            }
+          }
+
+          for(int bin=0; bin<nTauBins; bin++){
+            if( (tauISOEt_2) >= tauLo + (bin*tauBinWidth) ) {
+             doubleISOTauRates_emu->Fill(tauLo+(bin*tauBinWidth));  //GeV
+            }
+          } 
 
 
-      for(int bin=0; bin<nHtSumBins; bin++){
-        if( (htSum) >= htSumLo+(bin*htSumBinWidth) ) htSumRates_emu->Fill(htSumLo+(bin*htSumBinWidth)); //GeV
-      }
+          for(int bin=0; bin<nHtSumBins; bin++){
+            if( (htSum) >= htSumLo+(bin*htSumBinWidth) ) htSumRates_emu->Fill(htSumLo+(bin*htSumBinWidth)); //GeV
+          }
 
-      for(int bin=0; bin<nMhtSumBins; bin++){
-        if( (mhtSum) >= mhtSumLo+(bin*mhtSumBinWidth) ) mhtSumRates_emu->Fill(mhtSumLo+(bin*mhtSumBinWidth)); //GeV           
-      }
+          for(int bin=0; bin<nMhtSumBins; bin++){
+            if( (mhtSum) >= mhtSumLo+(bin*mhtSumBinWidth) ) mhtSumRates_emu->Fill(mhtSumLo+(bin*mhtSumBinWidth)); //GeV           
+          }
 
-      for(int bin=0; bin<nEtSumBins; bin++){
-        if( (etSum) >= etSumLo+(bin*etSumBinWidth) ) etSumRates_emu->Fill(etSumLo+(bin*etSumBinWidth)); //GeV           
-      }
+          for(int bin=0; bin<nEtSumBins; bin++){
+            if( (etSum) >= etSumLo+(bin*etSumBinWidth) ) etSumRates_emu->Fill(etSumLo+(bin*etSumBinWidth)); //GeV           
+          }
 
-      for(int bin=0; bin<nMetSumBins; bin++){
-        if( (metSum) >= metSumLo+(bin*metSumBinWidth) ) metSumRates_emu->Fill(metSumLo+(bin*metSumBinWidth)); //GeV           
-      }
-      for(int bin=0; bin<nMetHFSumBins; bin++){
-        if( (metHFSum) >= metHFSumLo+(bin*metHFSumBinWidth) ) metHFSumRates_emu->Fill(metHFSumLo+(bin*metHFSumBinWidth)); //GeV           
-      }
+          for(int bin=0; bin<nMetSumBins; bin++){
+            if( (metSum) >= metSumLo+(bin*metSumBinWidth) ) metSumRates_emu->Fill(metSumLo+(bin*metSumBinWidth)); //GeV           
+          }
+          for(int bin=0; bin<nMetHFSumBins; bin++){
+            if( (metHFSum) >= metHFSumLo+(bin*metHFSumBinWidth) ) metHFSumRates_emu->Fill(metHFSumLo+(bin*metHFSumBinWidth)); //GeV           
+          }
 
 
     }// closes if 'emuOn' is true
@@ -639,7 +700,7 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
           if( l1hw_->sumType[c] == L1Analysis::kTotalEt ) etSum = l1hw_->sumEt[c];
           if( l1hw_->sumType[c] == L1Analysis::kTotalHt ) htSum = l1hw_->sumEt[c];
           if( l1hw_->sumType[c] == L1Analysis::kMissingEt ) metSum = l1hw_->sumEt[c];
-	  if( l1hw_->sumType[c] == L1Analysis::kMissingEtHF ) metHFSum = l1hw_->sumEt[c];
+	      if( l1hw_->sumType[c] == L1Analysis::kMissingEtHF ) metHFSum = l1hw_->sumEt[c];
           if( l1hw_->sumType[c] == L1Analysis::kMissingHt ) mhtSum = l1hw_->sumEt[c];
       }
 
@@ -723,6 +784,10 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
 
   if (emuOn){
     singleJetRates_emu->Scale(norm);
+    singleJetRates_emu_HB->Scale(norm);
+    singleJetRates_emu_HE1->Scale(norm);
+    singleJetRates_emu_HE2->Scale(norm);
+
     doubleJetRates_emu->Scale(norm);
     tripleJetRates_emu->Scale(norm);
     quadJetRates_emu->Scale(norm);
@@ -735,31 +800,19 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
     singleISOTauRates_emu->Scale(norm);
     doubleISOTauRates_emu->Scale(norm);
 
-    singleJetRates_emu_HB->Scale(norm);
-    doubleJetRates_emu_HB->Scale(norm);
-    tripleJetRates_emu_HB->Scale(norm);
-    quadJetRates_emu_HB->Scale(norm);
-    singleEgRates_emu_HB->Scale(norm);
-    doubleEgRates_emu_HB->Scale(norm);
-    singleTauRates_emu_HB->Scale(norm);
-    doubleTauRates_emu_HB->Scale(norm);
-    singleISOEgRates_emu_HB->Scale(norm);
-    doubleISOEgRates_emu_HB->Scale(norm);
-    singleISOTauRates_emu_HB->Scale(norm);
-    doubleISOTauRates_emu_HB->Scale(norm);
+    singleJet12Rates_emu_ieta->Scale(norm);  doubleJet12Rates_emu_ieta->Scale(norm);  tripleJet12Rates_emu_ieta->Scale(norm);  quadJet12Rates_emu_ieta->Scale(norm);
+    singleJet35Rates_emu_ieta->Scale(norm);  doubleJet35Rates_emu_ieta->Scale(norm);  tripleJet35Rates_emu_ieta->Scale(norm);  quadJet35Rates_emu_ieta->Scale(norm);
+    singleJet60Rates_emu_ieta->Scale(norm);  doubleJet60Rates_emu_ieta->Scale(norm);  tripleJet60Rates_emu_ieta->Scale(norm);  quadJet60Rates_emu_ieta->Scale(norm);
+    singleJet90Rates_emu_ieta->Scale(norm);  doubleJet90Rates_emu_ieta->Scale(norm);  tripleJet90Rates_emu_ieta->Scale(norm);  quadJet90Rates_emu_ieta->Scale(norm);
+    singleJet120Rates_emu_ieta->Scale(norm); doubleJet120Rates_emu_ieta->Scale(norm); tripleJet120Rates_emu_ieta->Scale(norm); quadJet120Rates_emu_ieta->Scale(norm);
+    singleJet180Rates_emu_ieta->Scale(norm); doubleJet180Rates_emu_ieta->Scale(norm); tripleJet180Rates_emu_ieta->Scale(norm); quadJet180Rates_emu_ieta->Scale(norm);
 
-    singleJetRates_emu_HE->Scale(norm);
-    doubleJetRates_emu_HE->Scale(norm);
-    tripleJetRates_emu_HE->Scale(norm);
-    quadJetRates_emu_HE->Scale(norm);
-    singleEgRates_emu_HE->Scale(norm);
-    doubleEgRates_emu_HE->Scale(norm);
-    singleTauRates_emu_HE->Scale(norm);
-    doubleTauRates_emu_HE->Scale(norm);
-    singleISOEgRates_emu_HE->Scale(norm);
-    doubleISOEgRates_emu_HE->Scale(norm);
-    singleISOTauRates_emu_HE->Scale(norm);
-    doubleISOTauRates_emu_HE->Scale(norm);
+    singleJet12Rates_emu_sub->Scale(norm);  doubleJet12Rates_emu_sub->Scale(norm);  tripleJet12Rates_emu_sub->Scale(norm);  quadJet12Rates_emu_sub->Scale(norm);
+    singleJet35Rates_emu_sub->Scale(norm);  doubleJet35Rates_emu_sub->Scale(norm);  tripleJet35Rates_emu_sub->Scale(norm);  quadJet35Rates_emu_sub->Scale(norm);
+    singleJet60Rates_emu_sub->Scale(norm);  doubleJet60Rates_emu_sub->Scale(norm);  tripleJet60Rates_emu_sub->Scale(norm);  quadJet60Rates_emu_sub->Scale(norm);
+    singleJet90Rates_emu_sub->Scale(norm);  doubleJet90Rates_emu_sub->Scale(norm);  tripleJet90Rates_emu_sub->Scale(norm);  quadJet90Rates_emu_sub->Scale(norm);
+    singleJet120Rates_emu_sub->Scale(norm); doubleJet120Rates_emu_sub->Scale(norm); tripleJet120Rates_emu_sub->Scale(norm); quadJet120Rates_emu_sub->Scale(norm);
+    singleJet180Rates_emu_sub->Scale(norm); doubleJet180Rates_emu_sub->Scale(norm); tripleJet180Rates_emu_sub->Scale(norm); quadJet180Rates_emu_sub->Scale(norm);
 
     htSumRates_emu->Scale(norm);
     mhtSumRates_emu->Scale(norm);
@@ -767,16 +820,23 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
     metSumRates_emu->Scale(norm);
     metHFSumRates_emu->Scale(norm);
 
+    htSum_emu->Write();
+    mhtSum_emu->Write();
+    etSum_emu->Write();
+    metSum_emu->Write();
+    metHFSum_emu->Write();
+
     //set the errors for the rates
     //want error -> error * sqrt(norm) ?
 
     hcalTP_emu->Write();
-    hcalTP_emu_HB->Write();
-    hcalTP_emu_HE->Write();
-
     ecalTP_emu->Write();
 
     singleJetRates_emu->Write();
+    singleJetRates_emu_HB->Write();
+    singleJetRates_emu_HE1->Write();
+    singleJetRates_emu_HE2->Write();
+
     doubleJetRates_emu->Write();
     tripleJetRates_emu->Write();
     quadJetRates_emu->Write();
@@ -789,31 +849,19 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
     singleISOTauRates_emu->Write();
     doubleISOTauRates_emu->Write();
 
-    singleJetRates_emu_HE->Write();
-    doubleJetRates_emu_HE->Write();
-    tripleJetRates_emu_HE->Write();
-    quadJetRates_emu_HE->Write();
-    singleEgRates_emu_HE->Write();
-    doubleEgRates_emu_HE->Write();
-    singleTauRates_emu_HE->Write();
-    doubleTauRates_emu_HE->Write();
-    singleISOEgRates_emu_HE->Write();
-    doubleISOEgRates_emu_HE->Write();
-    singleISOTauRates_emu_HE->Write();
-    doubleISOTauRates_emu_HE->Write();
+    singleJet12Rates_emu_ieta->Write();  doubleJet12Rates_emu_ieta->Write();  tripleJet12Rates_emu_ieta->Write();  quadJet12Rates_emu_ieta->Write();
+    singleJet35Rates_emu_ieta->Write();  doubleJet35Rates_emu_ieta->Write();  tripleJet35Rates_emu_ieta->Write();  quadJet35Rates_emu_ieta->Write();
+    singleJet60Rates_emu_ieta->Write();  doubleJet60Rates_emu_ieta->Write();  tripleJet60Rates_emu_ieta->Write();  quadJet60Rates_emu_ieta->Write();
+    singleJet90Rates_emu_ieta->Write();  doubleJet90Rates_emu_ieta->Write();  tripleJet90Rates_emu_ieta->Write();  quadJet90Rates_emu_ieta->Write();
+    singleJet120Rates_emu_ieta->Write(); doubleJet120Rates_emu_ieta->Write(); tripleJet120Rates_emu_ieta->Write(); quadJet120Rates_emu_ieta->Write();
+    singleJet180Rates_emu_ieta->Write(); doubleJet180Rates_emu_ieta->Write(); tripleJet180Rates_emu_ieta->Write(); quadJet180Rates_emu_ieta->Write();
 
-    singleJetRates_emu_HB->Write();
-    doubleJetRates_emu_HB->Write();
-    tripleJetRates_emu_HB->Write();
-    quadJetRates_emu_HB->Write();
-    singleEgRates_emu_HB->Write();
-    doubleEgRates_emu_HB->Write();
-    singleTauRates_emu_HB->Write();
-    doubleTauRates_emu_HB->Write();
-    singleISOEgRates_emu_HB->Write();
-    doubleISOEgRates_emu_HB->Write();
-    singleISOTauRates_emu_HB->Write();
-    doubleISOTauRates_emu_HB->Write();
+    singleJet12Rates_emu_sub->Write();  doubleJet12Rates_emu_sub->Write();  tripleJet12Rates_emu_sub->Write();  quadJet12Rates_emu_sub->Write();
+    singleJet35Rates_emu_sub->Write();  doubleJet35Rates_emu_sub->Write();  tripleJet35Rates_emu_sub->Write();  quadJet35Rates_emu_sub->Write();
+    singleJet60Rates_emu_sub->Write();  doubleJet60Rates_emu_sub->Write();  tripleJet60Rates_emu_sub->Write();  quadJet60Rates_emu_sub->Write();
+    singleJet90Rates_emu_sub->Write();  doubleJet90Rates_emu_sub->Write();  tripleJet90Rates_emu_sub->Write();  quadJet90Rates_emu_sub->Write();
+    singleJet120Rates_emu_sub->Write(); doubleJet120Rates_emu_sub->Write(); tripleJet120Rates_emu_sub->Write(); quadJet120Rates_emu_sub->Write();
+    singleJet180Rates_emu_sub->Write(); doubleJet180Rates_emu_sub->Write(); tripleJet180Rates_emu_sub->Write(); quadJet180Rates_emu_sub->Write();
 
     htSumRates_emu->Write();
     mhtSumRates_emu->Write();
