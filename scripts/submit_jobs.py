@@ -33,9 +33,6 @@ def generate_ntuple_config(configtype, newtag, caloparams, algo):
     config type (default or new conditions) and 
     a new HcalL1TriggerObjects tag"""
 
-    samples = 2
-    if "1" in algo: samples = 1
-
     cmd = 'cmsDriver.py l1Ntuple -s RAW2DIGI '
     cmd += '--python_filename=ntuple_maker_' + configtype + '.py '
     # number of events; overridden by CRAB
@@ -78,7 +75,7 @@ PARSER.add_argument('-g', '--globaltag')
 PARSER.add_argument('-t', '--newtag', required=False)
 #PARSER.add_argument('-l', '--lumimask', required=True)
 PARSER.add_argument('-d', '--dataset', required=True)
-PARSER.add_argument('-a', '--algo', required=True)
+PARSER.add_argument('-s', '--scheme', required=True)
 PARSER.add_argument('-o', '--outputsite', required=True)
 PARSER.add_argument('-p', '--useparent', default=False, action="store_true")
 PARSER.add_argument('-n', '--no_exec', default=False, action="store_true")
@@ -122,7 +119,7 @@ for jobtype in COND_LIST:
     #crab_submit_script.write("LUMIMASK = '" + ARGS.lumimask + "'\n")
     crab_submit_script.write("DATASET = '" + ARGS.dataset + "'\n\n")
     crab_submit_script.write("USEPARENT = %r"%(ARGS.useparent) + "\n\n")
-    crab_submit_script.write("PFA = '" + ARGS.algo + "'\n\n")
+    crab_submit_script.write("PFA = '" + ARGS.scheme + "'\n\n")
     crab_submit_script.close()
     
     # concatenate crab submission file with template
@@ -133,11 +130,11 @@ for jobtype in COND_LIST:
 
     # generate cmsDriver commands
     if ARGS.newtag>0:
-        print generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams, ARGS.algo)
-        os.system(generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams, ARGS.algo))
+        print generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams, ARGS.scheme)
+        os.system(generate_ntuple_config(jobtype, ARGS.newtag, ARGS.caloparams, ARGS.scheme))
     else:
-        print generate_ntuple_config(jobtype,0, ARGS.caloparams, ARGS.algo)
-        os.system(generate_ntuple_config(jobtype, 0, ARGS.caloparams, ARGS.algo))  
+        print generate_ntuple_config(jobtype,0, ARGS.caloparams, ARGS.scheme)
+        os.system(generate_ntuple_config(jobtype, 0, ARGS.caloparams, ARGS.scheme))  
 
     f = open("ntuple_maker_def.py", "r")
     contents = f.readlines()
@@ -151,20 +148,39 @@ for jobtype in COND_LIST:
     contents.insert(22,"process.load(\"SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff\")\n")
     contents.insert(23,"\n")
     
-    if "1" not in ARGS.algo:
-        contents.insert(24,"print \"Only using 2 samples\"\n")
-        contents.insert(25,"process.simHcalTriggerPrimitiveDigis.numberOfSamples = 2\n")
-        contents.insert(26,"process.simHcalTriggerPrimitiveDigis.numberOfPresamples = 0\n")
-    else:
-        contents.insert(24,"print \"Only using 1 sample\"\n")
-        contents.insert(25,"process.simHcalTriggerPrimitiveDigis.numberOfSamples = 1\n")
-        contents.insert(26,"process.simHcalTriggerPrimitiveDigis.numberOfPresamples = 0\n")
+    if "PFA2p" in ARGS.scheme:
+        contents.insert(24, "print \"Only using 3 samples\"\n")
+        contents.insert(25, "process.simHcalTriggerPrimitiveDigis.numberOfSamplesQIE11 = 3\n")
+        contents.insert(26, "process.simHcalTriggerPrimitiveDigis.numberOfPresamplesQIE11 = 1\n")
+        contents.insert(27, "process.HcalTPGCoderULUT.contain1TS = False\n")
+        contents.insert(28, "process.HcalTPGCoderULUT.containPhaseNS = 3.0\n")
+    
+    elif "PFA2" in ARGS.scheme:
+        contents.insert(24, "print \"Only using 2 samples\"\n")
+        contents.insert(25, "process.simHcalTriggerPrimitiveDigis.numberOfSamplesQIE11 = 2\n")
+        contents.insert(26, "process.simHcalTriggerPrimitiveDigis.numberOfPresamplesQIE11 = 0\n")
+        contents.insert(27, "process.HcalTPGCoderULUT.contain1TS = False\n")
+        contents.insert(28, "process.HcalTPGCoderULUT.containPhaseNS = 3.0\n")
 
-    contents.insert(27,"\n")
-    contents.insert(28,"if \"%s\" in pfaWeightsMap:\n"%(ARGS.algo))
-    contents.insert(29,"    process.simHcalTriggerPrimitiveDigis.PeakFinderAlgorithmWeights = pfaWeightsMap[\"%s\"]\n"%(ARGS.algo))
-    contents.insert(30,"else:\n")
-    contents.insert(31,"    print \"No weights defined for algo '%s'; defaulting to zero weights!\"\n\n"%(ARGS.algo))
+    elif "PFA1p" in ARGS.scheme:
+        contents.insert(24, "print \"Only using 2 sample\"\n")
+        contents.insert(25, "process.simHcalTriggerPrimitiveDigis.numberOfSamplesQIE11 = 2\n")
+        contents.insert(26, "process.simHcalTriggerPrimitiveDigis.numberOfPresamplesQIE11 = 1\n")
+        contents.insert(27, "process.HcalTPGCoderULUT.contain1TS = True\n")
+        contents.insert(28, "process.HcalTPGCoderULUT.containPhaseNS = 3.0\n")
+
+    elif "PFA1" in ARGS.scheme:
+        contents.insert(24, "print \"Only using 1 sample\"\n")
+        contents.insert(25, "process.simHcalTriggerPrimitiveDigis.numberOfSamplesQIE11 = 1\n")
+        contents.insert(26, "process.simHcalTriggerPrimitiveDigis.numberOfPresamplesQIE11 = 0\n")
+        contents.insert(27, "process.HcalTPGCoderULUT.contain1TS = True\n")
+        contents.insert(28, "process.HcalTPGCoderULUT.containPhaseNS = 3.0\n")
+
+    contents.insert(28,"\n")
+    contents.insert(29,"if \"%s\" in pfaWeightsMap:\n"%(ARGS.scheme))
+    contents.insert(30,"    process.simHcalTriggerPrimitiveDigis.weightsQIE11 = pfaWeightsMap[\"%s\"]\n"%(ARGS.scheme))
+    contents.insert(31,"else:\n")
+    contents.insert(32,"    print \"No weights defined for scheme '%s'; defaulting to zero weights!\"\n\n"%(ARGS.scheme))
     
     f = open("ntuple_maker_def.py", "w")
     contents = "".join(contents)

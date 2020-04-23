@@ -153,21 +153,40 @@ def hackCMSRUNconfig(scheme, workingDir):
     contents.insert(22,"process.load(\"SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff\")\n")
     contents.insert(23,"\n")
     
-    if "1" not in scheme:
-        contents.insert(24,"print \"Only using 2 samples\"\n")
-        contents.insert(25,"process.simHcalTriggerPrimitiveDigis.numberOfSamples = 2\n")
-        contents.insert(26,"process.simHcalTriggerPrimitiveDigis.numberOfPresamples = 0\n")
-    else:
-        contents.insert(24,"print \"Only using 1 sample\"\n")
-        contents.insert(25,"process.simHcalTriggerPrimitiveDigis.numberOfSamples = 1\n")
-        contents.insert(26,"process.simHcalTriggerPrimitiveDigis.numberOfPresamples = 0\n")
+    if "PFA2p" in scheme:
+        contents.insert(24, "print \"Only using 3 samples\"\n")
+        contents.insert(25, "process.simHcalTriggerPrimitiveDigis.numberOfSamplesQIE11 = 3\n")
+        contents.insert(26, "process.simHcalTriggerPrimitiveDigis.numberOfPresamplesQIE11 = 1\n")
+        contents.insert(27, "process.HcalTPGCoderULUT.contain1TS = False\n")
+        contents.insert(28, "process.HcalTPGCoderULUT.containPhaseNS = 3.0\n")
     
-    contents.insert(27,"\n")
-    contents.insert(28,"if \"%s\" in pfaWeightsMap:\n"%(scheme))
-    contents.insert(29,"    process.simHcalTriggerPrimitiveDigis.PeakFinderAlgorithmWeights = pfaWeightsMap[\"%s\"]\n"%(scheme))
-    contents.insert(30,"else:\n")
-    contents.insert(31,"    print \"No weights defined for scheme '%s'; defaulting to zero weights!\"\n\n"%(scheme))
-    
+    elif "PFA2" in scheme:
+        contents.insert(24, "print \"Only using 2 samples\"\n")
+        contents.insert(25, "process.simHcalTriggerPrimitiveDigis.numberOfSamplesQIE11 = 2\n")
+        contents.insert(26, "process.simHcalTriggerPrimitiveDigis.numberOfPresamplesQIE11 = 0\n")
+        contents.insert(27, "process.HcalTPGCoderULUT.contain1TS = False\n")
+        contents.insert(28, "process.HcalTPGCoderULUT.containPhaseNS = 3.0\n")
+
+    elif "PFA1p" in scheme:
+        contents.insert(24, "print \"Only using 2 sample\"\n")
+        contents.insert(25, "process.simHcalTriggerPrimitiveDigis.numberOfSamplesQIE11 = 2\n")
+        contents.insert(26, "process.simHcalTriggerPrimitiveDigis.numberOfPresamplesQIE11 = 1\n")
+        contents.insert(27, "process.HcalTPGCoderULUT.contain1TS = True\n")
+        contents.insert(28, "process.HcalTPGCoderULUT.containPhaseNS = 3.0\n")
+
+    elif "PFA1" in scheme:
+        contents.insert(24, "print \"Only using 1 sample\"\n")
+        contents.insert(25, "process.simHcalTriggerPrimitiveDigis.numberOfSamplesQIE11 = 1\n")
+        contents.insert(26, "process.simHcalTriggerPrimitiveDigis.numberOfPresamplesQIE11 = 0\n")
+        contents.insert(27, "process.HcalTPGCoderULUT.contain1TS = True\n")
+        contents.insert(28, "process.HcalTPGCoderULUT.containPhaseNS = 3.0\n")
+
+    contents.insert(28,"\n")
+    contents.insert(29,"if \"%s\" in pfaWeightsMap:\n"%(scheme))
+    contents.insert(30,"    process.simHcalTriggerPrimitiveDigis.weightsQIE11 = pfaWeightsMap[\"%s\"]\n"%(scheme))
+    contents.insert(31,"else:\n")
+    contents.insert(32,"    print \"No weights defined for scheme '%s'; defaulting to zero weights!\"\n\n"%(scheme))
+
     f = open("%s/ntuple_maker.py"%(workingDir), "w")
     contents = "".join(contents)
     f.write(contents)
@@ -272,23 +291,6 @@ if __name__ == '__main__':
 
     subprocess.call(["chmod", "+x", "%s/runJob.sh"%(workingDir)])
 
-    # Right here we need to edit a src file and recompile to change the input LUT based on 1TS or 2TS scheme...
-    oneTS = "containmentCorrection1TS;"; twoTS = "pulseCorr_->correction(cell, 2, correctionPhaseNS, correctedCharge);"
-    filePath = '%s/src/CalibCalorimetry/HcalTPGAlgos/src/HcaluLUTTPGCoder.cc'%(CMSSW_BASE)
-    if "1" not in scheme:
-        p = subprocess.Popen(["grep", oneTS, filePath], stdout=subprocess.PIPE)
-        recompile = bool(p.stdout.readline())
-        replaceStr = 's#%s#%s#g'%(oneTS, twoTS)
-    else:
-        p = subprocess.Popen(["grep", twoTS, filePath], stdout=subprocess.PIPE)
-        recompile = bool(p.stdout.readline())
-        replaceStr = 's#%s#%s#g'%(twoTS, oneTS)
-    
-    # Only change the file and recompile if necessary
-    if recompile:
-        subprocess.call(['sed', '-i', replaceStr, filePath])
-        subprocess.call(['scram', 'b', '-f', '-j', '8'], cwd=CMSSW_BASE+"/src")
-
-    subprocess.call(["tar", "--exclude-caches-all", "--exclude-vcs", "-zcf", "%s/%s.tar.gz"%(workingDir,CMSSW_VERSION), "-C", "%s/.."%(CMSSW_BASE), CMSSW_VERSION, "--exclude=tmp", "--exclude=HcalTrigger", "--exclude=bin"])
+    subprocess.call(["tar", "--exclude-caches-all", "--exclude-vcs", "-zcf", "%s/%s.tar.gz"%(workingDir,CMSSW_VERSION), "-C", "%s/.."%(CMSSW_BASE), CMSSW_VERSION, "--include=lib", "--include=python", "--include=src/L1Trigger"])
     
     if not args.noSubmit: os.system("condor_submit %s/condorSubmit.jdl"%(workingDir))
