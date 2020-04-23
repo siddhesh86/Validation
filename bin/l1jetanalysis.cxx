@@ -32,11 +32,6 @@ Optionally, if you want to rescale to a given instantaneous luminosity:
 nb: for 2&3 I have provided the info in runInfoForRates.txt
 */
 
-// configurable parameters
-double numBunch = 2544; //the number of bunches colliding for the run of interest
-double runLum = 0.02; // 0.44: 275783  0.58:  276363 //luminosity of the run of interest (*10^34)
-double expectedLum = 1.15; //expected luminosity of 2016 runs (*10^34)
-
 void jetanalysis(bool newConditions, const std::string& inputFileDirectory);
 
 int main(int argc, char *argv[])
@@ -173,11 +168,7 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
     else nentries = treeL1hw->GetEntries();
     int goodLumiEventCount = 0;
 
-    std::string outputTxtFilename = "output_rates/" + outputDirectory + "/extraInfo.txt";
-    std::ofstream myfile; // save info about the run, including rates for a given lumi section, and number of events we used.
-    myfile.open(outputTxtFilename.c_str());
     eventTree->GetEntry(0);
-    myfile << "run number = " << event_->run << std::endl;
 
     // set parameters for histograms
     // jet bins
@@ -254,6 +245,9 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
     TH1F *refJetET_HE2 = new TH1F("RefJet_HE2", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
     TH1F *refmJetET_HE2 = new TH1F("RefmJet_HE2", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
 
+    TH1F *refJetET_HE = new TH1F("RefJet_HE", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
+    TH1F *refmJetET_HE = new TH1F("RefmJet_HE", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
+
     TH1F *jetET12   = new TH1F( "JetEt12" , axD.c_str(),nJetBins, jetLo, jetHi);
     TH1F *jetET35   = new TH1F( "JetEt35" , axD.c_str(),nJetBins, jetLo, jetHi);
     TH1F *jetET60   = new TH1F( "JetEt60" , axD.c_str(),nJetBins, jetLo, jetHi);
@@ -282,7 +276,13 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
     TH1F *jetET120_HE2  = new TH1F( "JetEt120_HE2" , axD.c_str(),nJetBins, jetLo, jetHi);
     TH1F *jetET180_HE2  = new TH1F( "JetEt180_HE2" , axD.c_str(),nJetBins, jetLo, jetHi);
 
-    
+    TH1F *jetET12_HE   = new TH1F( "JetEt12_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH1F *jetET35_HE   = new TH1F( "JetEt35_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH1F *jetET60_HE   = new TH1F( "JetEt60_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH1F *jetET90_HE   = new TH1F( "JetEt90_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH1F *jetET120_HE  = new TH1F( "JetEt120_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH1F *jetET180_HE  = new TH1F( "JetEt180_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
+   
     TH1F *l1jetET1 = new TH1F( "singleJet" , axD.c_str(),nJetBins, jetLo, jetHi);
     TH1F *l1jetET2 = new TH1F( "doubleJet" , axD.c_str(),nJetBins, jetLo, jetHi);
     TH1F *l1jetET3 = new TH1F( "tripleJet" , axD.c_str(),nJetBins, jetLo, jetHi);
@@ -308,7 +308,8 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
     TH2F *hresJet_HB = new TH2F("hresJet_HB","",nJetBins, jetLo, jetHi,100,-5,5);
     TH2F *hresJet_HE1 = new TH2F("hresJet_HE1","",nJetBins, jetLo, jetHi,100,-5,5);
     TH2F *hresJet_HE2 = new TH2F("hresJet_HE2","",nJetBins, jetLo, jetHi,100,-5,5);
-    
+    TH2F *hresJet_HE = new TH2F("hresJet_HE","",nJetBins, jetLo, jetHi,100,-5,5);
+   
     TH1F *h_resMET1 = new TH1F("hresMET1","",100,-5,5) ;
     TH1F *h_resMET2 = new TH1F("hresMET2","",100,-5,5) ;
     TH1F *h_resMET3 = new TH1F("hresMET3","",100,-5,5) ;
@@ -469,8 +470,8 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
 
                     refJetET_Incl->Fill(jet_->etCorr[jetIdx]);
                     if      (jetEta >= 0 && jetEta < 1.392)     { refJetET_HB->Fill(jet_->etCorr[jetIdx]); }
-                    else if (jetEta >= 1.392 && jetEta < 1.74) { refJetET_HE1->Fill(jet_->etCorr[jetIdx]); } 
-                    else if (jetEta >= 1.74 && jetEta < 2.868) { refJetET_HE2->Fill(jet_->etCorr[jetIdx]); }
+                    else if (jetEta >= 1.392 && jetEta < 1.74) { refJetET_HE1->Fill(jet_->etCorr[jetIdx]); refJetET_HE->Fill(jet_->etCorr[jetIdx]);} 
+                    else if (jetEta >= 1.74 && jetEta < 3.0) { refJetET_HE2->Fill(jet_->etCorr[jetIdx]); refJetET_HE->Fill(jet_->etCorr[jetIdx]);}
                     
                     // return Matched L1 jet
                     int l1jetIdx(-1);
@@ -513,24 +514,30 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
                             refmJetET_HE1->Fill(jet_->etCorr[jetIdx]);
                             hresJet_HE1->Fill(jet_->etCorr[jetIdx],resJet);
 
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) jetET12_HE1->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) jetET35_HE1->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) jetET60_HE1->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) jetET90_HE1->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) jetET120_HE1->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) jetET180_HE1->Fill(jet_->etCorr[jetIdx]);
-                        } else if (jetEta >= 1.74 && jetEta < 2.868) {
+                            refmJetET_HE->Fill(jet_->etCorr[jetIdx]);
+                            hresJet_HE->Fill(jet_->etCorr[jetIdx],resJet);
+
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) {jetET12_HE1->Fill(jet_->etCorr[jetIdx]);  jetET12_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) {jetET35_HE1->Fill(jet_->etCorr[jetIdx]);  jetET35_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) {jetET60_HE1->Fill(jet_->etCorr[jetIdx]);  jetET60_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) {jetET90_HE1->Fill(jet_->etCorr[jetIdx]);  jetET90_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) {jetET120_HE1->Fill(jet_->etCorr[jetIdx]); jetET120_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) {jetET180_HE1->Fill(jet_->etCorr[jetIdx]); jetET180_HE->Fill(jet_->etCorr[jetIdx]);}
+
+                        } else if (jetEta >= 1.74 && jetEta < 3.0) {
                             refmJetET_HE2->Fill(jet_->etCorr[jetIdx]);
                             hresJet_HE2->Fill(jet_->etCorr[jetIdx],resJet);
 
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) jetET12_HE2->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) jetET35_HE2->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) jetET60_HE2->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) jetET90_HE2->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) jetET120_HE2->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) jetET180_HE2->Fill(jet_->etCorr[jetIdx]);
-                        }
+                            refmJetET_HE->Fill(jet_->etCorr[jetIdx]);
+                            hresJet_HE->Fill(jet_->etCorr[jetIdx],resJet);
 
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) {jetET12_HE2->Fill(jet_->etCorr[jetIdx]);  jetET12_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) {jetET35_HE2->Fill(jet_->etCorr[jetIdx]);  jetET35_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) {jetET60_HE2->Fill(jet_->etCorr[jetIdx]);  jetET60_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) {jetET90_HE2->Fill(jet_->etCorr[jetIdx]);  jetET90_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) {jetET120_HE2->Fill(jet_->etCorr[jetIdx]); jetET120_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) {jetET180_HE2->Fill(jet_->etCorr[jetIdx]); jetET180_HE->Fill(jet_->etCorr[jetIdx]);}
+                        }
 
                         if (jet_->etCorr[jetIdx]<50.) h_resJet1->Fill(resJet);
                         if (jet_->etCorr[jetIdx]>=50. && jet_->etCorr[jetIdx]<100.) h_resJet2->Fill(resJet);
@@ -554,9 +561,6 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
 
     //  TFile g( outputFilename.c_str() , "new");
     kk->cd();
-    // normalisation factor for rate histograms (11kHz is the orbit frequency)
-    double norm = 11246*(numBunch/goodLumiEventCount); // no lumi rescale
-    //  double norm = 11246*(numBunch/goodLumiEventCount)*(expectedLum/runLum); //scale to nominal lumi
 
     if (emuOn){
         // ecal/hcal TPs
@@ -570,10 +574,12 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
         refJetET_HB->Write(); refmJetET_HB->Write();
         refJetET_HE1->Write(); refmJetET_HE1->Write();
         refJetET_HE2->Write(); refmJetET_HE2->Write();
+        refJetET_HE->Write(); refmJetET_HE->Write();
         jetET12->Write(); jetET35->Write(); jetET60->Write(); jetET90->Write(); jetET120->Write(); jetET180->Write();
         jetET12_HB->Write(); jetET35_HB->Write(); jetET60_HB->Write(); jetET90_HB->Write(); jetET120_HB->Write(); jetET180_HB->Write();
         jetET12_HE1->Write(); jetET35_HE1->Write(); jetET60_HE1->Write(); jetET90_HE1->Write(); jetET120_HE1->Write(); jetET180_HE1->Write();
         jetET12_HE2->Write(); jetET35_HE2->Write(); jetET60_HE2->Write(); jetET90_HE2->Write(); jetET120_HE2->Write(); jetET180_HE2->Write();
+        jetET12_HE->Write(); jetET35_HE->Write(); jetET60_HE->Write(); jetET90_HE->Write(); jetET120_HE->Write(); jetET180_HE->Write();
 
         refMET->Write();
         MET_50U->Write(); MET_100U->Write(); MET_120U->Write(); MET_150U->Write();
@@ -582,15 +588,9 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
         hresJet_HB->Write();
         hresJet_HE1->Write();
         hresJet_HE2->Write();
+        hresJet_HE->Write();
         h_resMET1->Write();h_resMET2->Write();h_resMET3->Write();h_resMET4->Write();h_resMET5->Write();h_resMET6->Write();h_resMET7->Write();h_resMET8->Write();h_resMET9->Write();h_resMET10->Write();
         h_resJet1->Write();h_resJet2->Write();h_resJet3->Write();h_resJet4->Write();h_resJet5->Write();h_resJet6->Write();h_resJet7->Write();h_resJet8->Write();h_resJet9->Write();h_resJet10->Write();
     }
 
-    myfile << "using the following ntuple: " << inputFile << std::endl;
-    myfile << "number of colliding bunches = " << numBunch << std::endl;
-    myfile << "run luminosity = " << runLum << std::endl;
-    myfile << "expected luminosity = " << expectedLum << std::endl;
-    myfile << "norm factor used = " << norm << std::endl;
-    myfile << "number of good events = " << goodLumiEventCount << std::endl;
-    myfile.close(); 
 }//closes the function 'rates'

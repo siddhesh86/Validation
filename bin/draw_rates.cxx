@@ -84,19 +84,20 @@ int main()
 
   }
   for(auto rateType : rateTypes) {
+
       std::string histName(rateType);
       std::string histNameHw(histName);
 
       rateHists_def[histName] = dynamic_cast<TH1F*>(files.at(0)->Get(histName.c_str()));
       rateHists_def[histName]->Rebin(rebinFactor);
       rateHists_def[histName]->SetLineColor(histColor[histName]);
-      rateHists_def[histName]->SetMaximum(1e9);
+      rateHists_def[histName]->SetMaximum(1e12);
       rateHists_def[histName]->SetMinimum(1e1);
 
       rateHists_new_cond[histName] = dynamic_cast<TH1F*>(files.at(1)->Get(histName.c_str())); 
       rateHists_new_cond[histName]->Rebin(rebinFactor);
       rateHists_new_cond[histName]->SetLineColor(histColor[histName]);
-      rateHists_new_cond[histName]->SetMaximum(1e8);
+      rateHists_new_cond[histName]->SetMaximum(1e12);
       rateHists_new_cond[histName]->SetMinimum(1e1);
 
       TString name(rateHists_new_cond[histName]->GetName());
@@ -120,7 +121,7 @@ int main()
 
       }
       rateHistsRatio[histName]->SetMinimum(0.0);    
-      rateHistsRatio[histName]->SetMaximum(1.4);    
+      rateHistsRatio[histName]->SetMaximum(1.19);    
       rateHistsRatio[histName]->SetLineWidth(2);    
 
   }
@@ -230,15 +231,16 @@ int main()
     pad2.back()->Draw();
    
     pad1.back()->cd();
-  
+    pad1.back()->SetBottomMargin(0.02); 
+    rateHists_def[iplot.second.front()]->GetXaxis()->SetLabelSize(0.0);
     rateHists_def[iplot.second.front()]->Draw("hist");
 
     TLegend *leg = nullptr;
-    if (iplot.first.find("scalarSum") != std::string::npos) {
-       leg = new TLegend(0.24, 0.16, 0.94, 0.34);
-    } else {
+    //if (iplot.first.find("scalarSum") != std::string::npos) {
+    //   leg = new TLegend(0.24, 0.16, 0.94, 0.34);
+    //} else {
        leg = new TLegend(0.24, 0.75, 0.94, 0.93);
-    }
+    //}
     leg->SetNColumns(2);
 
     for(auto hist : iplot.second) {
@@ -278,9 +280,25 @@ int main()
     leg->Draw();
   
     pad2.back()->cd();
+    pad2.back()->SetTopMargin(0.05);
+    pad2.back()->SetBottomMargin(0.3);
+    auto xLabSize = rateHistsRatio[iplot.second.front()]->GetXaxis()->GetLabelSize();
+    auto xTitleSize = rateHistsRatio[iplot.second.front()]->GetXaxis()->GetTitleSize();
+    auto yLabSize = rateHistsRatio[iplot.second.front()]->GetYaxis()->GetLabelSize();
+    auto yTitleSize = rateHistsRatio[iplot.second.front()]->GetYaxis()->GetTitleSize();
+    auto yOffSet = rateHistsRatio[iplot.second.front()]->GetYaxis()->GetTitleOffset();
+
+    rateHistsRatio[iplot.second.front()]->GetXaxis()->SetTitleSize(0.7*xTitleSize/0.3);
+    rateHistsRatio[iplot.second.front()]->GetXaxis()->SetLabelSize(0.7*xLabSize/0.3);
+
+    rateHistsRatio[iplot.second.front()]->GetYaxis()->SetTitleSize(0.7*yTitleSize/0.3);
+    rateHistsRatio[iplot.second.front()]->GetYaxis()->SetLabelSize(0.7*yLabSize/0.3);
+
+    rateHistsRatio[iplot.second.front()]->GetYaxis()->SetTitleOffset(0.3*yOffSet/0.7);
+
     rateHistsRatio[iplot.second.front()]->Draw("hist");
     if(includeHW) rateHistsRatio[iplot.second.front()]->GetYaxis()->SetTitle("Current/HW");
-    else rateHistsRatio[iplot.second.front()]->GetYaxis()->SetTitle("New/Current");
+    else rateHistsRatio[iplot.second.front()]->GetYaxis()->SetTitle("New / Default");
     for(auto hist : iplot.second) {
       rateHistsRatio[hist]->Draw("hist same");
     }

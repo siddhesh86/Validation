@@ -33,6 +33,10 @@ double numBunch = 2544; //the number of bunches colliding for the run of interes
 double runLum = 0.02; // 0.44: 275783  0.58:  276363 //luminosity of the run of interest (*10^34)
 double expectedLum = 1.15; //expected luminosity of 2016 runs (*10^34)
 
+// Run3 LHC parameters for normalizing rates
+double instLumi = 2e34; // Hz/cm^2, https://indico.cern.ch/event/880508/contributions/3720014/attachments/1980197/3297287/CMS-Week_20200203_LHCStatus_Schaumann_v2.pdf
+double mbXSec   = 6.92e-26; // cm^2, minimum bias cross section from Run2: https://twiki.cern.ch/twiki/bin/view/CMS/PileupJSONFileforData#Recommended_cross_section
+
 void rates(bool newConditions, const std::string& inputFileDirectory);
 
 int main(int argc, char *argv[])
@@ -779,8 +783,10 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
   //  TFile g( outputFilename.c_str() , "new");
   kk->cd();
   // normalisation factor for rate histograms (11kHz is the orbit frequency)
-  double norm = 11246*(numBunch/goodLumiEventCount); // no lumi rescale
+  // double norm = 11246*(numBunch/goodLumiEventCount); // no lumi rescale
   //  double norm = 11246*(numBunch/goodLumiEventCount)*(expectedLum/runLum); //scale to nominal lumi
+  //  Run3 normalization ==> inst lumi * min bias xsec / <PU>
+  double norm = instLumi * mbXSec / 9000.;
 
   if (emuOn){
     singleJetRates_emu->Scale(norm);

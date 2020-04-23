@@ -30,9 +30,10 @@ int main()
   std::vector<std::string> jetrefTypes = {"RefJet","RefmJet" };
   std::map<std::string, std::vector<std::string> > jetTypes;
   jetTypes["Incl"] = {"JetEt12","JetEt35","JetEt60","JetEt90","JetEt120","JetEt180"};
-  jetTypes["HB"] = {"JetEt12","JetEt35","JetEt60","JetEt90","JetEt120","JetEt180"};
+  jetTypes["HB"]   = {"JetEt12","JetEt35","JetEt60","JetEt90","JetEt120","JetEt180"};
   jetTypes["HE1"]  = {"JetEt12","JetEt35","JetEt60","JetEt90","JetEt120","JetEt180"};
   jetTypes["HE2"]  = {"JetEt12","JetEt35","JetEt60","JetEt90","JetEt120","JetEt180"};
+  jetTypes["HE"]   = {"JetEt12","JetEt35","JetEt60","JetEt90","JetEt120","JetEt180"};
 
   std::vector<std::string> sumrefTypes = {"RefMET"};
   std::vector<std::string> sumTypes = {"MET50","MET100","MET120","MET150"};
@@ -115,6 +116,14 @@ int main()
   
   std::vector<TCanvas*> tcanvases;
   
+  auto mSize = 0.8; auto lWidth = 2.; auto lMargin = 0.20; auto xOff = 1.14; auto yOff = 1.40;
+  auto yMinS = -0.9; auto yMaxS = 0.9;
+  auto yMinR = -0.05; auto yMaxR = 1.05;
+  auto yResTitle = "#sigma#left(#frac{online - offline}{offline}#right)"; auto ySclTitle = "#mu#left(#frac{online - offline}{offline}#right)";
+  auto metXTitle = "Offline MET [GeV]"; auto jetXTitle = "Offline Jet E_{T} [GeV]";
+
+  gStyle->SetEndErrorSize(0.0);
+
   for (auto& [region, histos] : jetTypes) {
 
       std::string refName = "RefmJet_"; refName += region;
@@ -123,13 +132,15 @@ int main()
       jetrefHists_new_cond[region]=dynamic_cast<TH1F*>(files.at(1)->Get(refName.c_str()));jetrefHists_new_cond[region]->Rebin(rebinF);
 
       for (auto& jetType : histos) {
+          TLegend* jetLegend = new TLegend(0.71, 0.3, 0.91, 0.45);
+
            std::string histName;
            if (region == "Incl") { histName = jetType; }
            else { histName = std::string(jetType) + std::string("_") + std::string(region); }
 
            tcanvases.push_back(new TCanvas);
            tcanvases.back()->SetLogx();
-           tcanvases.back()->SetWindowSize(tcanvases.back()->GetWw(), 1.3*tcanvases.back()->GetWh());
+           tcanvases.back()->SetWindowSize(tcanvases.back()->GetWw(), 1.*tcanvases.back()->GetWh());
            gPad->SetGridx(); gPad->SetGridy();
 
            jetHists_def[histName] = dynamic_cast<TH1F*>(files.at(0)->Get(histName.c_str()));
@@ -147,15 +158,31 @@ int main()
            jeteffHists_def[histName] = Eff1;
            jeteffHists_new_cond[histName] = Eff2;
            
+           jeteffHists_def[histName]->GetYaxis()->SetRangeUser(yMinR, yMaxR);
+           jeteffHists_new_cond[histName]->GetYaxis()->SetRangeUser(yMinR, yMaxR);
+
            jeteffHists_def[histName]->SetMarkerColor(kBlack);
            jeteffHists_new_cond[histName]->SetMarkerColor(kRed);
 
-           jeteffHists_def[histName]->SetMarkerSize(0.8);
-           jeteffHists_new_cond[histName]->SetMarkerSize(0.8);
+           jeteffHists_def[histName]->SetLineColor(kBlack);
+           jeteffHists_new_cond[histName]->SetLineColor(kRed);
+
+           jeteffHists_def[histName]->SetMarkerSize(mSize);
+           jeteffHists_new_cond[histName]->SetMarkerSize(mSize);
            
+           jeteffHists_def[histName]->SetLineWidth(lWidth);
+           jeteffHists_new_cond[histName]->SetLineWidth(lWidth);
+
+           jetLegend->AddEntry(jeteffHists_def[histName], "Default", "EP");
+           jetLegend->AddEntry(jeteffHists_new_cond[histName], "New", "EP");
+
            jeteffHists_def[histName]->Draw("AP");
            jeteffHists_new_cond[histName]->Draw("P");
-           jeteffHists_def[histName]->GetXaxis()->SetTitle("offline Jet E_{T} (GeV)");
+           jeteffHists_def[histName]->SetTitle("");
+           jeteffHists_new_cond[histName]->SetTitle("");
+           jeteffHists_def[histName]->GetXaxis()->SetTitle(jetXTitle);
+           jeteffHists_def[histName]->GetXaxis()->SetTitleOffset(1.17*jeteffHists_def[histName]->GetXaxis()->GetTitleOffset());
+            jetLegend->Draw("SAME");
            jeteffHists_def[histName]->GetYaxis()->SetTitle("Efficiency");
 
            tcanvases.back()->Print(Form("plots/%sjetEffs_emu_%s.pdf", jetType.c_str(), region.c_str()));
@@ -173,9 +200,11 @@ int main()
   
    for (auto metType : sumTypes) {
 
+    TLegend* metLegend = new TLegend(0.17, 0.77, 0.37, 0.93);
+
     tcanvases.push_back(new TCanvas);
     tcanvases.back()->SetLogx();
-    tcanvases.back()->SetWindowSize(tcanvases.back()->GetWw(), 1.3*tcanvases.back()->GetWh());
+    tcanvases.back()->SetWindowSize(tcanvases.back()->GetWw(), 1.*tcanvases.back()->GetWh());
     gPad->SetGridx(); gPad->SetGridy();
     std::string histName(metType);
 
@@ -194,15 +223,32 @@ int main()
     meteffHists_def[metType] = Eff1;
     meteffHists_new_cond[metType] = Eff2;
     
+    meteffHists_def[metType]->GetYaxis()->SetRangeUser(yMinR,yMaxR);
+    meteffHists_new_cond[metType]->GetYaxis()->SetRangeUser(yMinR,yMaxR);
+
     meteffHists_def[metType]->SetMarkerColor(kBlack);
     meteffHists_new_cond[metType]->SetMarkerColor(kRed);
 
-    meteffHists_def[metType]->SetMarkerSize(0.8);
-    meteffHists_new_cond[metType]->SetMarkerSize(0.8);
-    
+    meteffHists_def[metType]->SetLineColor(kBlack);
+    meteffHists_new_cond[metType]->SetLineColor(kRed);
+
+    meteffHists_def[metType]->SetLineWidth(lWidth);
+    meteffHists_new_cond[metType]->SetLineWidth(lWidth);
+
+    meteffHists_def[metType]->SetMarkerSize(mSize);
+    meteffHists_new_cond[metType]->SetMarkerSize(mSize);
+
+    metLegend->AddEntry(meteffHists_def[metType], "Default", "EP");
+    metLegend->AddEntry(meteffHists_new_cond[metType], "New", "EP");
+   
     meteffHists_def[metType]->Draw("AP");
     meteffHists_new_cond[metType]->Draw("P");
-    meteffHists_def[metType]->GetXaxis()->SetTitle("offline MET (GeV)");
+    meteffHists_def[metType]->SetTitle("");
+    meteffHists_new_cond[metType]->SetTitle("");
+    meteffHists_def[metType]->GetXaxis()->SetTitle(metXTitle);
+    meteffHists_def[metType]->GetXaxis()->SetTitleOffset(1.17*meteffHists_def[metType]->GetXaxis()->GetTitleOffset());
+    metLegend->Draw("SAME");
+
     meteffHists_def[metType]->GetYaxis()->SetTitle("Efficiency");
 
     tcanvases.back()->Print(Form("plots/%smetEffs_emu.pdf", metType.c_str()));
@@ -222,7 +268,7 @@ int main()
   std::vector<TH2F*> resHistos2D_def;   std::vector<TH2F*> resHistos2D_new_cond;
   std::vector<TH1D*> resHistos1D_1_def; std::vector<TH1D*> resHistos1D_1_new_cond;
   std::vector<TH1D*> resHistos1D_2_def; std::vector<TH1D*> resHistos1D_2_new_cond;
-  std::vector<std::string> regions = {"Incl", "HB", "HE2", "HE1"}; 
+  std::vector<std::string> regions = {"Incl", "HE", "HB", "HE2", "HE1"}; 
 
   for (auto& region : regions) {
 
@@ -252,40 +298,70 @@ int main()
       gROOT->cd();
     
       mycanvases_1.push_back(new TCanvas);
-      mycanvases_1.back()->SetWindowSize(mycanvases_1.back()->GetWw(), 1.3*mycanvases_1.back()->GetWh());
+      mycanvases_1.back()->SetWindowSize(mycanvases_1.back()->GetWw(), 1.*mycanvases_1.back()->GetWh());
 
       gPad->SetGridx(); gPad->SetGridy();
+      gPad->SetLeftMargin(lMargin);
      
       resHistos1D_1_def.back()->Draw("");
-      resHistos1D_1_def.back()->GetXaxis()->SetTitle("offline Jet E_{T} (GeV)");
-      resHistos1D_1_def.back()->GetYaxis()->SetRangeUser(-1.,1.);
-      resHistos1D_1_def.back()->SetMarkerSize(0.5);
+      resHistos1D_1_def.back()->SetTitle("");
+      resHistos1D_1_def.back()->GetXaxis()->SetNdivisions(5,10,0);
+      resHistos1D_1_def.back()->GetXaxis()->SetTitle(jetXTitle);
+      resHistos1D_1_def.back()->GetXaxis()->SetTitleOffset(xOff*resHistos1D_1_def.back()->GetXaxis()->GetTitleOffset());
+      resHistos1D_1_def.back()->GetYaxis()->SetTitleOffset(yOff*resHistos1D_1_def.back()->GetYaxis()->GetTitleOffset());
+
+
+      resHistos1D_1_def.back()->GetYaxis()->SetTitle(ySclTitle);
+      resHistos1D_1_def.back()->GetYaxis()->SetRangeUser(yMinS, yMaxS);
+      resHistos1D_1_def.back()->SetMarkerSize(mSize);
+      resHistos1D_1_def.back()->SetLineWidth(lWidth);
       resHistos1D_1_def.back()->SetMarkerStyle(24);
 
       resHistos1D_1_new_cond.back()->Draw("same");
       resHistos1D_1_new_cond.back()->SetLineColor(2);
+      resHistos1D_1_new_cond.back()->SetLineWidth(lWidth);
       resHistos1D_1_new_cond.back()->SetMarkerColor(2);
-      resHistos1D_1_new_cond.back()->SetMarkerSize(0.5);
+      resHistos1D_1_new_cond.back()->SetMarkerSize(mSize);
       resHistos1D_1_new_cond.back()->SetMarkerStyle(20);
+
+      TLegend* resLegend1 = new TLegend(0.23, 0.17, 0.43, 0.32);
+      resLegend1->AddEntry(resHistos1D_1_def.back(), "Default", "EP");
+      resLegend1->AddEntry(resHistos1D_1_new_cond.back(), "New", "EP");
+      resLegend1->Draw("SAME");
 
       mycanvases_1.back()->Print(Form("plots/%s_emu.pdf", meanName.c_str()));
 
       mycanvases_2.push_back(new TCanvas);
-      mycanvases_2.back()->SetWindowSize(mycanvases_2.back()->GetWw(), 1.3*mycanvases_2.back()->GetWh());
+      mycanvases_2.back()->SetWindowSize(mycanvases_2.back()->GetWw(), 1.*mycanvases_2.back()->GetWh());
 
       gPad->SetGridx(); gPad->SetGridy();
-     
+      gPad->SetLeftMargin(lMargin);
+ 
       resHistos1D_2_def.back()->Draw("");
-      resHistos1D_2_def.back()->GetXaxis()->SetTitle("offline Jet E_{T} (GeV)");
-      resHistos1D_2_def.back()->GetYaxis()->SetRangeUser(0.,0.9);
-      resHistos1D_2_def.back()->SetMarkerSize(0.5);
+      resHistos1D_2_def.back()->SetTitle("");
+      resHistos1D_2_def.back()->GetXaxis()->SetTitle(jetXTitle);
+      resHistos1D_2_def.back()->GetXaxis()->SetNdivisions(5,10,0);
+      resHistos1D_2_def.back()->GetXaxis()->SetTitleOffset(xOff*resHistos1D_2_def.back()->GetXaxis()->GetTitleOffset());
+      resHistos1D_2_def.back()->GetYaxis()->SetTitleOffset(yOff*resHistos1D_2_def.back()->GetYaxis()->GetTitleOffset());
+
+
+      resHistos1D_2_def.back()->GetYaxis()->SetTitle(yResTitle);
+      resHistos1D_2_def.back()->GetYaxis()->SetRangeUser(yMinR,yMaxR);
+      resHistos1D_2_def.back()->SetMarkerSize(mSize);
+      resHistos1D_2_def.back()->SetLineWidth(lWidth);
       resHistos1D_2_def.back()->SetMarkerStyle(24);
 
       resHistos1D_2_new_cond.back()->Draw("same");
       resHistos1D_2_new_cond.back()->SetLineColor(2);
+      resHistos1D_2_new_cond.back()->SetLineWidth(lWidth);
       resHistos1D_2_new_cond.back()->SetMarkerColor(2);
-      resHistos1D_2_new_cond.back()->SetMarkerSize(0.5);
+      resHistos1D_2_new_cond.back()->SetMarkerSize(mSize);
       resHistos1D_2_new_cond.back()->SetMarkerStyle(20);
+
+      TLegend* resLegend2 = new TLegend(0.33, 0.75, 0.53, 0.90);
+      resLegend2->AddEntry(resHistos1D_2_def.back(), "Default", "EP");
+      resLegend2->AddEntry(resHistos1D_2_new_cond.back(), "New", "EP");
+      resLegend2->Draw("SAME");
 
       mycanvases_2.back()->Print(Form("plots/%s_emu.pdf", sigmaName.c_str()));
 
@@ -308,37 +384,64 @@ int main()
   resMET_new_cond->FitSlicesY(fgaus0);//,1,80);//,20);
   
   mycanvases2.push_back(new TCanvas);
-  mycanvases2.back()->SetWindowSize(mycanvases2.back()->GetWw(), 1.3*mycanvases2.back()->GetWh());
+  mycanvases2.back()->SetWindowSize(mycanvases2.back()->GetWw(), 1.*mycanvases2.back()->GetWh());
 
   gPad->SetGridx(); gPad->SetGridy();
+  gPad->SetLeftMargin(lMargin);
 
   TH1D *resMET_def_1 = (TH1D*)files.at(0)->Get("hResMET_1");
   resMET_def_1->Draw("");
-  resMET_def_1->GetXaxis()->SetTitle("offline MET (GeV)");
-  resMET_def_1->GetYaxis()->SetRangeUser(-2.,2);
-  resMET_def_1->SetMarkerSize(0.5);
+  resMET_def_1->SetTitle("");
+
+  resMET_def_1->GetXaxis()->SetTitle(metXTitle);
+  resMET_def_1->GetXaxis()->SetNdivisions(5,10,0);
+
+  resMET_def_1->GetXaxis()->SetTitleOffset(xOff*resMET_def_1->GetXaxis()->GetTitleOffset());
+  resMET_def_1->GetYaxis()->SetTitleOffset(yOff*resMET_def_1->GetYaxis()->GetTitleOffset());
+
+
+  resMET_def_1->GetYaxis()->SetTitle(ySclTitle);
+  resMET_def_1->GetYaxis()->SetRangeUser(-2.25,2.25);
+  resMET_def_1->SetMarkerSize(mSize);
+  resMET_def_1->SetLineWidth(lWidth);
   resMET_def_1->SetMarkerStyle(24);
   resMET_def_1->SetMarkerColor(1);
   
   TH1D *resMET_new_cond_1 = (TH1D*)files.at(1)->Get("hResMET_1");
   resMET_new_cond_1->Draw("same");
   resMET_new_cond_1->SetLineColor(2);
+  resMET_new_cond_1->SetLineWidth(lWidth);
   resMET_new_cond_1->SetMarkerColor(2);
-  resMET_new_cond_1->SetMarkerSize(0.5);
+  resMET_new_cond_1->SetMarkerSize(mSize);
   resMET_new_cond_1->SetMarkerStyle(20);
   
+  TLegend* resLegend1 = new TLegend(0.23, 0.17, 0.43, 0.32);
+  resLegend1->AddEntry(resMET_def_1, "Default", "EP");
+  resLegend1->AddEntry(resMET_new_cond_1, "New", "EP");
+  resLegend1->Draw("SAME");
+
   mycanvases2.back()->Print(Form("plots/%s_emu.pdf", "resMET_mean"));
 
   mycanvases2.push_back(new TCanvas);
-  mycanvases2.back()->SetWindowSize(mycanvases2.back()->GetWw(), 1.3*mycanvases2.back()->GetWh());
+  mycanvases2.back()->SetWindowSize(mycanvases2.back()->GetWw(), 1.*mycanvases2.back()->GetWh());
 
   gPad->SetGridx(); gPad->SetGridy();
+  gPad->SetLeftMargin(lMargin);
 
   TH1D *resMET_def_2 = (TH1D*)files.at(0)->Get("hResMET_2");
   resMET_def_2->Draw("");
-  resMET_def_2->GetXaxis()->SetTitle("offline MET (GeV)");
-  resMET_def_2->GetYaxis()->SetRangeUser(0.,1.);
-  resMET_def_2->SetMarkerSize(0.5);
+  resMET_def_2->SetTitle("");
+
+  resMET_def_2->GetXaxis()->SetTitle(metXTitle);
+  resMET_def_2->GetXaxis()->SetNdivisions(5,10,0);
+  resMET_def_2->GetXaxis()->SetTitleOffset(xOff*resMET_def_2->GetXaxis()->GetTitleOffset());
+  resMET_def_2->GetYaxis()->SetTitleOffset(yOff*resMET_def_2->GetYaxis()->GetTitleOffset());
+
+
+  resMET_def_2->GetYaxis()->SetTitle(yResTitle);
+  resMET_def_2->GetYaxis()->SetRangeUser(yMinR, yMaxR);
+  resMET_def_2->SetMarkerSize(mSize);
+  resMET_def_2->SetLineWidth(lWidth);
   resMET_def_2->SetMarkerStyle(24);
   resMET_def_2->SetMarkerColor(1);
 
@@ -346,9 +449,15 @@ int main()
   resMET_new_cond_2->Draw("same");
   resMET_new_cond_2->SetLineColor(2);
   resMET_new_cond_2->SetMarkerColor(2);
-  resMET_new_cond_2->SetMarkerSize(0.5);
+  resMET_new_cond_2->SetMarkerSize(mSize);
+  resMET_new_cond_2->SetLineWidth(lWidth);
   resMET_new_cond_2->SetMarkerStyle(20);
   
+  TLegend* resLegend2 = new TLegend(0.23, 0.17, 0.43, 0.32);
+  resLegend2->AddEntry(resMET_def_2, "Default", "EP");
+  resLegend2->AddEntry(resMET_new_cond_2, "New", "EP");
+  resLegend2->Draw("SAME");
+
   mycanvases2.back()->Print(Form("plots/%s_emu.pdf", "resMET_sigma"));
   
   //-----------------------------------------------------------------------
@@ -366,7 +475,7 @@ int main()
     //    histName += "Effs_emu";
     //  histNameHw += "Effs_hw";
     rcanvases.push_back(new TCanvas);
-    rcanvases.back()->SetWindowSize(rcanvases.back()->GetWw(), 1.3*rcanvases.back()->GetWh());
+    rcanvases.back()->SetWindowSize(rcanvases.back()->GetWw(), 1.*rcanvases.back()->GetWh());
     
     resHists_def[rType] = dynamic_cast<TH1F*>(files.at(0)->Get(histName.c_str()));
     //  resHists_hw[rType] = dynamic_cast<TH1F*>(files.at(0)->Get(histNameHw.c_str()));
@@ -419,7 +528,7 @@ int main()
   for(auto iplot : plots) {
 
     canvases.push_back(new TCanvas);
-    canvases.back()->SetWindowSize(canvases.back()->GetWw(), 1.3*canvases.back()->GetWh());
+    canvases.back()->SetWindowSize(canvases.back()->GetWw(), 1.*canvases.back()->GetWh());
     pad1.push_back(new TPad("pad1", "pad1", 0, 0.3, 1, 1));
     pad1.back()->SetLogy();
     pad1.back()->SetGrid();
