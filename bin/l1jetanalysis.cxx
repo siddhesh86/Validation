@@ -17,6 +17,7 @@
 
 #include "L1Trigger/L1TNtuples/interface/L1AnalysisRecoJetDataFormat.h"
 #include "L1Trigger/L1TNtuples/interface/L1AnalysisRecoMetDataFormat.h"
+#include "L1Trigger/L1TNtuples/interface/L1AnalysisRecoMuon2DataFormat.h"
 #include "L1Trigger/L1TNtuples/interface/L1AnalysisRecoMetFilterDataFormat.h"
 
 /* TODO: put errors in rates...
@@ -127,9 +128,11 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
     // In case you want to include RECO info
     TChain * recoTree = new TChain("l1JetRecoTree/JetRecoTree");
     TChain * metfilterTree = new TChain("l1MetFilterRecoTree/MetFilterRecoTree");
+    TChain * muonTree = new TChain("l1MuonRecoTree/Muon2RecoTree");
     if (recoOn) {
         recoTree->Add(inputFile.c_str());
         metfilterTree->Add(inputFile.c_str());
+        muonTree->Add(inputFile.c_str());
     }
 
     TChain * treeL1TPemu = new TChain("l1CaloTowerEmuTree/L1CaloTowerTree");
@@ -151,6 +154,8 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
 
     L1Analysis::L1AnalysisRecoJetDataFormat    *jet_ = new L1Analysis::L1AnalysisRecoJetDataFormat();
     recoTree->SetBranchAddress("Jet", &jet_);
+    L1Analysis::L1AnalysisRecoMuon2DataFormat    *muon_ = new L1Analysis::L1AnalysisRecoMuon2DataFormat();
+    muonTree->SetBranchAddress("Muon", &muon_);
     L1Analysis::L1AnalysisRecoMetDataFormat    *met_ = new L1Analysis::L1AnalysisRecoMetDataFormat();
     recoTree->SetBranchAddress("Sums", &met_);
     L1Analysis::L1AnalysisRecoMetFilterDataFormat    *metfilter_ = new L1Analysis::L1AnalysisRecoMetFilterDataFormat();
@@ -206,138 +211,147 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
     float tpLo = 0.;
     float tpHi = 100.;
 
-    std::string axR = ";Threshold E_{T} (GeV);rate (Hz)";
-    std::string axD = ";E_{T} (GeV);events/bin";
-    std::string metD = ";MET (GeV);events/bin";
+    // nPV bins
+    int nPVbins = 101;
+    float pvLow = -0.5;
+    float pvHi  = 100.5;
+
+    std::string axR = ";Threshold E_{T} (GeV);nPV;rate (Hz)";
+    std::string axD = ";E_{T} (GeV);nPV;Events / bin";
+    std::string metD = ";MET (GeV);nPV;Events / bin";
     
     //make histos
     // TH1F *NCenJets = new TH1F("NCenJets","n",20,-0.5,19.5);
 
     std::vector<double> jetThresholds; std::vector<double> metThresholds;
-    if (!newConditions) {
-        jetThresholds = {12.0, 35.0, 60.0, 90.0, 120.0, 180.0};
-        metThresholds = {50.0, 100.0, 120.0, 180.0};
-    }
-    else if (inputFileDirectory.find("PFA1p")) {
-        jetThresholds = {12.0, 35.0, 60.0, 90.0, 120.0, 180.0};
-        metThresholds = {50.0, 100.0, 120.0, 180.0};
+    jetThresholds = {12.0, 35.0, 60.0, 90.0, 120.0, 180.0};
+    metThresholds = {50.0, 100.0, 120.0, 180.0};
 
-        //jetThresholds = {12.0, 24.0, 50.0, 76.0, 101.0, 173.0};
-        //metThresholds = {36.0, 72.0, 85.0, 106.0};
-    }
-    else if (inputFileDirectory.find("PFA3p")) {
-        jetThresholds = {12.0, 35.0, 60.0, 90.0, 120.0, 180.0};
-        metThresholds = {50.0, 100.0, 120.0, 180.0};
-
-        //jetThresholds = {12.0, 30.0, 54.0, 81.0, 107.0, 174.0};
-        //metThresholds = {41.0, 82.0, 96.0, 121.0};
-    }
     // Jets
-    TH1F *refJetET_Incl = new TH1F("RefJet_Incl", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
-    TH1F *refmJetET_Incl = new TH1F("RefmJet_Incl", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
+    TH2F *refJetET_Incl = new TH2F("RefJet_Incl", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *refmJetET_Incl = new TH2F("RefmJet_Incl", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
 
-    TH1F *refJetET_HB = new TH1F("RefJet_HB", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
-    TH1F *refmJetET_HB = new TH1F("RefmJet_HB", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
+    TH2F *refJetET_HB = new TH2F("RefJet_HB", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *refmJetET_HB = new TH2F("RefmJet_HB", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
 
-    TH1F *refJetET_HE1 = new TH1F("RefJet_HE1", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
-    TH1F *refmJetET_HE1 = new TH1F("RefmJet_HE1", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
+    TH2F *refJetET_HE1 = new TH2F("RefJet_HE1", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *refmJetET_HE1 = new TH2F("RefmJet_HE1", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
     
-    TH1F *refJetET_HE2 = new TH1F("RefJet_HE2", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
-    TH1F *refmJetET_HE2 = new TH1F("RefmJet_HE2", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
+    TH2F *refJetET_HE2 = new TH2F("RefJet_HE2", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *refmJetET_HE2 = new TH2F("RefmJet_HE2", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
 
-    TH1F *refJetET_HE = new TH1F("RefJet_HE", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
-    TH1F *refmJetET_HE = new TH1F("RefmJet_HE", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi);
+    TH2F *refJetET_HE = new TH2F("RefJet_HE", "all Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *refmJetET_HE = new TH2F("RefmJet_HE", "all matched Jet1 E_{T} (GeV)",nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
 
-    TH1F *jetET12   = new TH1F( "JetEt12" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET35   = new TH1F( "JetEt35" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET60   = new TH1F( "JetEt60" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET90   = new TH1F( "JetEt90" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET120  = new TH1F( "JetEt120" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET180  = new TH1F( "JetEt180" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH2F *jetET12   = new TH2F( "JetEt12" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET35   = new TH2F( "JetEt35" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET60   = new TH2F( "JetEt60" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET90   = new TH2F( "JetEt90" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET120  = new TH2F( "JetEt120" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET180  = new TH2F( "JetEt180" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
 
-    TH1F *jetET12_HB   = new TH1F( "JetEt12_HB" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET35_HB   = new TH1F( "JetEt35_HB" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET60_HB   = new TH1F( "JetEt60_HB" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET90_HB   = new TH1F( "JetEt90_HB" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET120_HB  = new TH1F( "JetEt120_HB" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET180_HB  = new TH1F( "JetEt180_HB" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH2F *jetET12_HB   = new TH2F( "JetEt12_HB" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET35_HB   = new TH2F( "JetEt35_HB" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET60_HB   = new TH2F( "JetEt60_HB" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET90_HB   = new TH2F( "JetEt90_HB" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET120_HB  = new TH2F( "JetEt120_HB" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET180_HB  = new TH2F( "JetEt180_HB" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
 
-    TH1F *jetET12_HE1   = new TH1F( "JetEt12_HE1" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET35_HE1   = new TH1F( "JetEt35_HE1" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET60_HE1   = new TH1F( "JetEt60_HE1" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET90_HE1   = new TH1F( "JetEt90_HE1" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET120_HE1  = new TH1F( "JetEt120_HE1" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET180_HE1  = new TH1F( "JetEt180_HE1" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH2F *jetET12_HE1   = new TH2F( "JetEt12_HE1" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET35_HE1   = new TH2F( "JetEt35_HE1" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET60_HE1   = new TH2F( "JetEt60_HE1" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET90_HE1   = new TH2F( "JetEt90_HE1" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET120_HE1  = new TH2F( "JetEt120_HE1" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET180_HE1  = new TH2F( "JetEt180_HE1" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
 
-    TH1F *jetET12_HE2   = new TH1F( "JetEt12_HE2" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET35_HE2   = new TH1F( "JetEt35_HE2" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET60_HE2   = new TH1F( "JetEt60_HE2" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET90_HE2   = new TH1F( "JetEt90_HE2" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET120_HE2  = new TH1F( "JetEt120_HE2" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET180_HE2  = new TH1F( "JetEt180_HE2" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH2F *jetET12_HE2   = new TH2F( "JetEt12_HE2" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET35_HE2   = new TH2F( "JetEt35_HE2" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET60_HE2   = new TH2F( "JetEt60_HE2" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET90_HE2   = new TH2F( "JetEt90_HE2" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET120_HE2  = new TH2F( "JetEt120_HE2" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET180_HE2  = new TH2F( "JetEt180_HE2" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
 
-    TH1F *jetET12_HE   = new TH1F( "JetEt12_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET35_HE   = new TH1F( "JetEt35_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET60_HE   = new TH1F( "JetEt60_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET90_HE   = new TH1F( "JetEt90_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET120_HE  = new TH1F( "JetEt120_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *jetET180_HE  = new TH1F( "JetEt180_HE" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH2F *jetET12_HE   = new TH2F( "JetEt12_HE" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET35_HE   = new TH2F( "JetEt35_HE" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET60_HE   = new TH2F( "JetEt60_HE" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET90_HE   = new TH2F( "JetEt90_HE" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET120_HE  = new TH2F( "JetEt120_HE" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *jetET180_HE  = new TH2F( "JetEt180_HE" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
    
-    TH1F *l1jetET1 = new TH1F( "singleJet" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *l1jetET2 = new TH1F( "doubleJet" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *l1jetET3 = new TH1F( "tripleJet" , axD.c_str(),nJetBins, jetLo, jetHi);
-    TH1F *l1jetET4 = new TH1F( "quadJet" , axD.c_str(),nJetBins, jetLo, jetHi);
+    TH2F *l1jetET1 = new TH2F( "singleJet" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *l1jetET2 = new TH2F( "doubleJet" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *l1jetET3 = new TH2F( "tripleJet" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+    TH2F *l1jetET4 = new TH2F( "quadJet" , axD.c_str(),nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
 
     // and Sums
-    TH1F *refMET  = new TH1F("RefMET",metD.c_str(), nMetSumBins, metSumLo, metSumHi);
-    TH1F *MET_150U = new TH1F("MET150",metD.c_str(), nMetSumBins, metSumLo, metSumHi);
-    TH1F *MET_120U  = new TH1F("MET120",metD.c_str(), nMetSumBins, metSumLo, metSumHi);
-    TH1F *MET_100U  = new TH1F("MET100",metD.c_str(), nMetSumBins, metSumLo, metSumHi);
-    TH1F *MET_50U  = new TH1F("MET50",metD.c_str(), nMetSumBins, metSumLo, metSumHi);
+    TH2F *refMET_Calo  = new TH2F("RefMET_Calo",metD.c_str(), nMetSumBins, metSumLo, metSumHi, nPVbins, pvLow, pvHi);
+    TH2F *MET_150U_Calo = new TH2F("MET150_Calo",metD.c_str(), nMetSumBins, metSumLo, metSumHi, nPVbins, pvLow, pvHi);
+    TH2F *MET_120U_Calo  = new TH2F("MET120_Calo",metD.c_str(), nMetSumBins, metSumLo, metSumHi, nPVbins, pvLow, pvHi);
+    TH2F *MET_100U_Calo  = new TH2F("MET100_Calo",metD.c_str(), nMetSumBins, metSumLo, metSumHi, nPVbins, pvLow, pvHi);
+    TH2F *MET_50U_Calo  = new TH2F("MET50_Calo",metD.c_str(), nMetSumBins, metSumLo, metSumHi, nPVbins, pvLow, pvHi);
 
-    TH1F *l1ET = new TH1F("etSum","L1 sumET (GeV)",nEtSumBins,etSumLo,etSumHi);
-    TH1F *l1MET = new TH1F("metSum","L1 MET (GeV)",nMetSumBins,metSumLo,metSumHi);
-    TH1F *l1METHF = new TH1F("metHFSum","L1 METHF (GeV)",nMetSumBins,metSumLo,metSumHi);
-    TH1F *l1HT = new TH1F("htSum","L1 HT (GeV)",nHtSumBins,htSumLo,htSumHi);
-    TH1F *l1MHT = new TH1F("mhtSum","L1 MHT (GeV)",nMhtSumBins,mhtSumLo,mhtSumHi);
+    TH2F *refMET_PF  = new TH2F("RefMET_PF",metD.c_str(), nMetSumBins, metSumLo, metSumHi, nPVbins, pvLow, pvHi);
+    TH2F *MET_150U_PF = new TH2F("MET150_PF",metD.c_str(), nMetSumBins, metSumLo, metSumHi, nPVbins, pvLow, pvHi);
+    TH2F *MET_120U_PF  = new TH2F("MET120_PF",metD.c_str(), nMetSumBins, metSumLo, metSumHi, nPVbins, pvLow, pvHi);
+    TH2F *MET_100U_PF  = new TH2F("MET100_PF",metD.c_str(), nMetSumBins, metSumLo, metSumHi, nPVbins, pvLow, pvHi);
+    TH2F *MET_50U_PF  = new TH2F("MET50_PF",metD.c_str(), nMetSumBins, metSumLo, metSumHi, nPVbins, pvLow, pvHi);
+
+    TH2F *l1ET = new TH2F("etSum","L1 sumET (GeV)",nEtSumBins,etSumLo,etSumHi, nPVbins, pvLow, pvHi);
+    TH2F *l1MET = new TH2F("metSum","L1 MET (GeV)",nMetSumBins,metSumLo,metSumHi, nPVbins, pvLow, pvHi);
+    TH2F *l1METHF = new TH2F("metHFSum","L1 METHF (GeV)",nMetSumBins,metSumLo,metSumHi, nPVbins, pvLow, pvHi);
+    TH2F *l1HT = new TH2F("htSum","L1 HT (GeV)",nHtSumBins,htSumLo,htSumHi, nPVbins, pvLow, pvHi);
+    TH2F *l1MHT = new TH2F("mhtSum","L1 MHT (GeV)",nMhtSumBins,mhtSumLo,mhtSumHi, nPVbins, pvLow, pvHi);
 
     // resolution histograms
-    TH2F *hresJet_Incl = new TH2F("hresJet_Incl","",nJetBins, jetLo, jetHi,100,-5,5);
-    TH2F *hresMET = new TH2F("hResMET","",nMetSumBins,metSumLo,metSumHi,100,-5,5);
+    TH3F *hresMET_PF = new TH3F("hResMET_PF","",nMetSumBins,metSumLo,metSumHi,100,-5,5,nPVbins,pvLow,pvHi);
 
-    TH2F *hresJet_HB = new TH2F("hresJet_HB","",nJetBins, jetLo, jetHi,100,-5,5);
-    TH2F *hresJet_HE1 = new TH2F("hresJet_HE1","",nJetBins, jetLo, jetHi,100,-5,5);
-    TH2F *hresJet_HE2 = new TH2F("hresJet_HE2","",nJetBins, jetLo, jetHi,100,-5,5);
-    TH2F *hresJet_HE = new TH2F("hresJet_HE","",nJetBins, jetLo, jetHi,100,-5,5);
-   
-    TH1F *h_resMET1 = new TH1F("hresMET1","",100,-5,5) ;
-    TH1F *h_resMET2 = new TH1F("hresMET2","",100,-5,5) ;
-    TH1F *h_resMET3 = new TH1F("hresMET3","",100,-5,5) ;
-    TH1F *h_resMET4 = new TH1F("hresMET4","",100,-5,5) ;
-    TH1F *h_resMET5 = new TH1F("hresMET5","",100,-5,5) ;
-    TH1F *h_resMET6 = new TH1F("hresMET6","",100,-5,5) ;
-    TH1F *h_resMET7 = new TH1F("hresMET7","",100,-5,5) ;
-    TH1F *h_resMET8 = new TH1F("hresMET8","",100,-5,5) ;
-    TH1F *h_resMET9 = new TH1F("hresMET9","",100,-5,5) ;
-    TH1F *h_resMET10 = new TH1F("hresMET10","",100,-5,5) ;
+    TH2F *h_resMET1_PF = new TH2F("hresMET1_PF","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET2_PF = new TH2F("hresMET2_PF","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET3_PF = new TH2F("hresMET3_PF","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET4_PF = new TH2F("hresMET4_PF","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET5_PF = new TH2F("hresMET5_PF","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET6_PF = new TH2F("hresMET6_PF","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET7_PF = new TH2F("hresMET7_PF","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET8_PF = new TH2F("hresMET8_PF","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET9_PF = new TH2F("hresMET9_PF","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET10_PF = new TH2F("hresMET10_PF","",100,-5,5, nPVbins, pvLow, pvHi) ;
     
-    TH1F *h_resJet1 = new TH1F("hresJet1","",100,-5,5) ;
-    TH1F *h_resJet2 = new TH1F("hresJet2","",100,-5,5) ;
-    TH1F *h_resJet3 = new TH1F("hresJet3","",100,-5,5) ;
-    TH1F *h_resJet4 = new TH1F("hresJet4","",100,-5,5) ;
-    TH1F *h_resJet5 = new TH1F("hresJet5","",100,-5,5) ;
-    TH1F *h_resJet6 = new TH1F("hresJet6","",100,-5,5) ;
-    TH1F *h_resJet7 = new TH1F("hresJet7","",100,-5,5) ;
-    TH1F *h_resJet8 = new TH1F("hresJet8","",100,-5,5) ;
-    TH1F *h_resJet9 = new TH1F("hresJet9","",100,-5,5) ;
-    TH1F *h_resJet10 = new TH1F("hresJet10","",100,-5,5) ;
+    TH3F *hresMET_Calo = new TH3F("hResMET_Calo","",nMetSumBins,metSumLo,metSumHi,100,-5,5,nPVbins,pvLow,pvHi);
+
+    TH2F *h_resMET1_Calo = new TH2F("hresMET1_Calo","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET2_Calo = new TH2F("hresMET2_Calo","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET3_Calo = new TH2F("hresMET3_Calo","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET4_Calo = new TH2F("hresMET4_Calo","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET5_Calo = new TH2F("hresMET5_Calo","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET6_Calo = new TH2F("hresMET6_Calo","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET7_Calo = new TH2F("hresMET7_Calo","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET8_Calo = new TH2F("hresMET8_Calo","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET9_Calo = new TH2F("hresMET9_Calo","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resMET10_Calo = new TH2F("hresMET10_Calo","",100,-5,5, nPVbins, pvLow, pvHi) ;
+
+    TH3F *hresJet_HB = new TH3F("hresJet_HB","",nJetBins, jetLo, jetHi,100,-5,5,nPVbins,pvLow,pvHi);
+    TH3F *hresJet_HE1 = new TH3F("hresJet_HE1","",nJetBins, jetLo, jetHi,100,-5,5,nPVbins,pvLow,pvHi);
+    TH3F *hresJet_HE2 = new TH3F("hresJet_HE2","",nJetBins, jetLo, jetHi,100,-5,5,nPVbins,pvLow,pvHi);
+    TH3F *hresJet_HE = new TH3F("hresJet_HE","",nJetBins, jetLo, jetHi,100,-5,5,nPVbins,pvLow,pvHi);
+    TH3F *hresJet_Incl = new TH3F("hresJet_Incl","",nJetBins, jetLo, jetHi,100,-5,5,nPVbins,pvLow,pvHi);
+
+    TH2F *h_resJet1 = new TH2F("hresJet1","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resJet2 = new TH2F("hresJet2","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resJet3 = new TH2F("hresJet3","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resJet4 = new TH2F("hresJet4","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resJet5 = new TH2F("hresJet5","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resJet6 = new TH2F("hresJet6","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resJet7 = new TH2F("hresJet7","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resJet8 = new TH2F("hresJet8","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resJet9 = new TH2F("hresJet9","",100,-5,5, nPVbins, pvLow, pvHi) ;
+    TH2F *h_resJet10 = new TH2F("hresJet10","",100,-5,5, nPVbins, pvLow, pvHi) ;
       
     // hcal/ecal TPs
-    TH1F* hcalTP_emu = new TH1F("hcalTP_emu", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
-    TH1F* ecalTP_emu = new TH1F("ecalTP_emu", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
+    TH2F* hcalTP_emu = new TH2F("hcalTP_emu", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi, nPVbins, pvLow, pvHi);
+    TH2F* ecalTP_emu = new TH2F("ecalTP_emu", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi, nPVbins, pvLow, pvHi);
 
-    // TH1F* hcalTP_hw = new TH1F("hcalTP_hw", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
-    // TH1F* ecalTP_hw = new TH1F("ecalTP_hw", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi);
+    //TH2F* hcalTP_hw = new TH2F("hcalTP_hw", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi, nPVbins, pvLow, pvHi);
+    //TH2F* ecalTP_hw = new TH2F("ecalTP_hw", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi, nPVbins, pvLow, pvHi);
 
     /////////////////////////////////
     // loop through all the entries//
@@ -351,6 +365,23 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
         if (!isGoodLumiSection(event_->lumi)) continue;
         goodLumiEventCount++;
 
+        int nPV = event_->nPV_True;
+
+        // Check for at least one iso muon in the event.
+        bool isoMu = false;
+        if (recoOn) {
+            muonTree->GetEntry(jentry);
+            for(unsigned int i = 0; i < muon_->nMuons; ++i)
+            {
+                if (muon_->hlt_isomu[i] == 1) {
+                    isoMu = true;
+                    break;
+                }
+            }
+        }
+
+        if (!isoMu) continue;
+
         //do routine for L1 emulator quantites
         if (emuOn){
 
@@ -359,11 +390,11 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
             
             for(int i=0; i < l1TPemu_->nHCALTP; i++){
                 tpEt = l1TPemu_->hcalTPet[i];
-                hcalTP_emu->Fill(tpEt);
+                hcalTP_emu->Fill(tpEt, nPV);
             }
             for(int i=0; i < l1TPemu_->nECALTP; i++){
                 tpEt = l1TPemu_->ecalTPet[i];
-                ecalTP_emu->Fill(tpEt);
+                ecalTP_emu->Fill(tpEt, nPV);
             }
 
             treeL1emu->GetEntry(jentry);
@@ -372,22 +403,22 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
             double jetEt_1(0.);
             if (l1emu_->nJets>0) {
                 jetEt_1 = l1emu_->jetEt[0];
-                l1jetET1->Fill(jetEt_1);
+                l1jetET1->Fill(jetEt_1, nPV);
             }
             double jetEt_2(0.);
             if (l1emu_->nJets>1) {
                 jetEt_2 = l1emu_->jetEt[1];
-                l1jetET2->Fill(jetEt_2);
+                l1jetET2->Fill(jetEt_2, nPV);
             }
             double jetEt_3(0.);
             if (l1emu_->nJets>2) {
                 jetEt_3 = l1emu_->jetEt[2];
-                l1jetET3->Fill(jetEt_3);
+                l1jetET3->Fill(jetEt_3, nPV);
             }
             double jetEt_4(0.);
             if (l1emu_->nJets>3) {
                 jetEt_4 = l1emu_->jetEt[3];
-                l1jetET4->Fill(jetEt_4);
+                l1jetET4->Fill(jetEt_4, nPV);
             }
             
             double htSum(0.0);
@@ -404,14 +435,15 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
                 if( l1emu_->sumType[c] == L1Analysis::kMissingHt ) mhtSum = l1emu_->sumEt[c];
             }
 
-            l1ET->Fill(etSum);
-            l1MET->Fill(metSum);
-            l1METHF->Fill(metHFSum);
-            l1HT->Fill(htSum);
-            l1MHT->Fill(mhtSum);
+            l1ET->Fill(etSum, nPV);
+            l1MET->Fill(metSum, nPV);
+            l1METHF->Fill(metHFSum, nPV);
+            l1HT->Fill(htSum, nPV);
+            l1MHT->Fill(mhtSum, nPV);
         
             // stuff for efficiencies and resolution
             if (recoOn) {
+
                 recoTree->GetEntry(jentry);
                 metfilterTree->GetEntry(jentry);
 
@@ -430,28 +462,53 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
                 //}
 
                 // met
-                float rMET = met_->pfMetNoMu;
-                refMET->Fill( rMET );
-                if( metSum > metThresholds[0]) { MET_50U->Fill(rMET);}
-                if( metSum > metThresholds[1]) { MET_100U->Fill(rMET);}
-                if( metSum > metThresholds[2]) { MET_120U->Fill(rMET);}
-                if( metSum > metThresholds[3]) { MET_150U->Fill(rMET);}
+                float pfMET = met_->pfMetNoMu;
+
+                refMET_PF->Fill( pfMET, nPV );
+                if( metSum > metThresholds[0]) { MET_50U_PF->Fill(pfMET, nPV);}
+                if( metSum > metThresholds[1]) { MET_100U_PF->Fill(pfMET, nPV);}
+                if( metSum > metThresholds[2]) { MET_120U_PF->Fill(pfMET, nPV);}
+                if( metSum > metThresholds[3]) { MET_150U_PF->Fill(pfMET, nPV);}
 
                 // met resolution
-                float resMET = (metSum-rMET)/rMET;
-                hresMET->Fill(rMET, resMET);
+                float resMET_PF = (metSum-pfMET)/pfMET;
+                hresMET_PF->Fill(pfMET, resMET_PF, nPV);
                 
-                if (rMET<20.) h_resMET1->Fill(resMET);
-                if (rMET>=20. && rMET<40.) h_resMET2->Fill(resMET);
-                if (rMET>=40. && rMET<60.) h_resMET3->Fill(resMET);
-                if (rMET>=60. && rMET<80.) h_resMET4->Fill(resMET);
-                if (rMET>=80. && rMET<100.) h_resMET5->Fill(resMET);
-                if (rMET>=100. && rMET<120.) h_resMET6->Fill(resMET);
-                if (rMET>=120. && rMET<140.) h_resMET7->Fill(resMET);
-                if (rMET>=140. && rMET<180.) h_resMET8->Fill(resMET);
-                if (rMET>=180. && rMET<250.) h_resMET9->Fill(resMET);
-                if (rMET>=250. && rMET<500.) h_resMET10->Fill(resMET);
+                if (pfMET<20.) h_resMET1_PF->Fill(resMET_PF, nPV);
+                if (pfMET>=20. && pfMET<40.) h_resMET2_PF->Fill(resMET_PF, nPV);
+                if (pfMET>=40. && pfMET<60.) h_resMET3_PF->Fill(resMET_PF, nPV);
+                if (pfMET>=60. && pfMET<80.) h_resMET4_PF->Fill(resMET_PF, nPV);
+                if (pfMET>=80. && pfMET<100.) h_resMET5_PF->Fill(resMET_PF, nPV);
+                if (pfMET>=100. && pfMET<120.) h_resMET6_PF->Fill(resMET_PF, nPV);
+                if (pfMET>=120. && pfMET<140.) h_resMET7_PF->Fill(resMET_PF, nPV);
+                if (pfMET>=140. && pfMET<180.) h_resMET8_PF->Fill(resMET_PF, nPV);
+                if (pfMET>=180. && pfMET<250.) h_resMET9_PF->Fill(resMET_PF, nPV);
+                if (pfMET>=250. && pfMET<500.) h_resMET10_PF->Fill(resMET_PF, nPV);
                 
+
+
+                float caloMET = met_->caloMet;
+                refMET_Calo->Fill( caloMET, nPV );
+                if( metSum > metThresholds[0]) { MET_50U_Calo->Fill(caloMET, nPV);}
+                if( metSum > metThresholds[1]) { MET_100U_Calo->Fill(caloMET, nPV);}
+                if( metSum > metThresholds[2]) { MET_120U_Calo->Fill(caloMET, nPV);}
+                if( metSum > metThresholds[3]) { MET_150U_Calo->Fill(caloMET, nPV);}
+
+                // met resolution
+                float resMET_calo = (metSum-caloMET)/caloMET;
+                hresMET_Calo->Fill(caloMET, resMET_calo, nPV);
+                
+                if (caloMET<20.) h_resMET1_Calo->Fill(resMET_calo, nPV);
+                if (caloMET>=20. && caloMET<40.) h_resMET2_Calo->Fill(resMET_calo, nPV);
+                if (caloMET>=40. && caloMET<60.) h_resMET3_Calo->Fill(resMET_calo, nPV);
+                if (caloMET>=60. && caloMET<80.) h_resMET4_Calo->Fill(resMET_calo, nPV);
+                if (caloMET>=80. && caloMET<100.) h_resMET5_Calo->Fill(resMET_calo, nPV);
+                if (caloMET>=100. && caloMET<120.) h_resMET6_Calo->Fill(resMET_calo, nPV);
+                if (caloMET>=120. && caloMET<140.) h_resMET7_Calo->Fill(resMET_calo, nPV);
+                if (caloMET>=140. && caloMET<180.) h_resMET8_Calo->Fill(resMET_calo, nPV);
+                if (caloMET>=180. && caloMET<250.) h_resMET9_Calo->Fill(resMET_calo, nPV);
+                if (caloMET>=250. && caloMET<500.) h_resMET10_Calo->Fill(resMET_calo, nPV);
+
                 // leading offline jet
                 double maxEn(0.);
                 int jetIdx(-1);
@@ -468,10 +525,10 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
 
                     double jetEta = abs(jet_->eta[jetIdx]);
 
-                    refJetET_Incl->Fill(jet_->etCorr[jetIdx]);
-                    if      (jetEta >= 0 && jetEta < 1.392)     { refJetET_HB->Fill(jet_->etCorr[jetIdx]); }
-                    else if (jetEta >= 1.392 && jetEta < 1.74) { refJetET_HE1->Fill(jet_->etCorr[jetIdx]); refJetET_HE->Fill(jet_->etCorr[jetIdx]);} 
-                    else if (jetEta >= 1.74 && jetEta < 3.0) { refJetET_HE2->Fill(jet_->etCorr[jetIdx]); refJetET_HE->Fill(jet_->etCorr[jetIdx]);}
+                    refJetET_Incl->Fill(jet_->etCorr[jetIdx], nPV);
+                    if      (jetEta >= 0 && jetEta < 1.392)     { refJetET_HB->Fill(jet_->etCorr[jetIdx], nPV); }
+                    else if (jetEta >= 1.392 && jetEta < 1.74) { refJetET_HE1->Fill(jet_->etCorr[jetIdx], nPV); refJetET_HE->Fill(jet_->etCorr[jetIdx], nPV);} 
+                    else if (jetEta >= 1.74 && jetEta < 3.0) { refJetET_HE2->Fill(jet_->etCorr[jetIdx], nPV); refJetET_HE->Fill(jet_->etCorr[jetIdx], nPV);}
                     
                     // return Matched L1 jet
                     int l1jetIdx(-1);
@@ -490,65 +547,65 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
                     if (l1jetIdx>=0) { // found matched l1jet
                         
                         float resJet=(l1emu_->jetEt[l1jetIdx]-jet_->etCorr[jetIdx])/jet_->etCorr[jetIdx];
-                        refmJetET_Incl->Fill(jet_->etCorr[jetIdx]);
-                        hresJet_Incl->Fill(jet_->etCorr[jetIdx],resJet);
+                        refmJetET_Incl->Fill(jet_->etCorr[jetIdx], nPV);
+                        hresJet_Incl->Fill(jet_->etCorr[jetIdx],resJet, nPV);
 
-                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) jetET12->Fill(jet_->etCorr[jetIdx]);
-                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) jetET35->Fill(jet_->etCorr[jetIdx]);
-                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) jetET60->Fill(jet_->etCorr[jetIdx]);
-                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) jetET90->Fill(jet_->etCorr[jetIdx]);
-                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) jetET120->Fill(jet_->etCorr[jetIdx]);
-                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) jetET180->Fill(jet_->etCorr[jetIdx]);
+                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) jetET12->Fill(jet_->etCorr[jetIdx], nPV);
+                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) jetET35->Fill(jet_->etCorr[jetIdx], nPV);
+                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) jetET60->Fill(jet_->etCorr[jetIdx], nPV);
+                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) jetET90->Fill(jet_->etCorr[jetIdx], nPV);
+                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) jetET120->Fill(jet_->etCorr[jetIdx], nPV);
+                        if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) jetET180->Fill(jet_->etCorr[jetIdx], nPV);
 
                         if (jetEta >= 0 && jetEta < 1.392) {
-                            refmJetET_HB->Fill(jet_->etCorr[jetIdx]);
-                            hresJet_HB->Fill(jet_->etCorr[jetIdx],resJet);
+                            refmJetET_HB->Fill(jet_->etCorr[jetIdx], nPV);
+                            hresJet_HB->Fill(jet_->etCorr[jetIdx],resJet,nPV);
 
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) jetET12_HB->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) jetET35_HB->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) jetET60_HB->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) jetET90_HB->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) jetET120_HB->Fill(jet_->etCorr[jetIdx]);
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) jetET180_HB->Fill(jet_->etCorr[jetIdx]);
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) jetET12_HB->Fill(jet_->etCorr[jetIdx], nPV);
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) jetET35_HB->Fill(jet_->etCorr[jetIdx], nPV);
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) jetET60_HB->Fill(jet_->etCorr[jetIdx], nPV);
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) jetET90_HB->Fill(jet_->etCorr[jetIdx], nPV);
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) jetET120_HB->Fill(jet_->etCorr[jetIdx], nPV);
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) jetET180_HB->Fill(jet_->etCorr[jetIdx], nPV);
                         } else if (jetEta >= 1.392 && jetEta < 1.74) {
-                            refmJetET_HE1->Fill(jet_->etCorr[jetIdx]);
-                            hresJet_HE1->Fill(jet_->etCorr[jetIdx],resJet);
+                            refmJetET_HE1->Fill(jet_->etCorr[jetIdx],nPV);
+                            hresJet_HE1->Fill(jet_->etCorr[jetIdx],resJet,nPV);
 
-                            refmJetET_HE->Fill(jet_->etCorr[jetIdx]);
-                            hresJet_HE->Fill(jet_->etCorr[jetIdx],resJet);
+                            refmJetET_HE->Fill(jet_->etCorr[jetIdx],nPV);
+                            hresJet_HE->Fill(jet_->etCorr[jetIdx],resJet,nPV);
 
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) {jetET12_HE1->Fill(jet_->etCorr[jetIdx]);  jetET12_HE->Fill(jet_->etCorr[jetIdx]);}
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) {jetET35_HE1->Fill(jet_->etCorr[jetIdx]);  jetET35_HE->Fill(jet_->etCorr[jetIdx]);}
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) {jetET60_HE1->Fill(jet_->etCorr[jetIdx]);  jetET60_HE->Fill(jet_->etCorr[jetIdx]);}
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) {jetET90_HE1->Fill(jet_->etCorr[jetIdx]);  jetET90_HE->Fill(jet_->etCorr[jetIdx]);}
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) {jetET120_HE1->Fill(jet_->etCorr[jetIdx]); jetET120_HE->Fill(jet_->etCorr[jetIdx]);}
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) {jetET180_HE1->Fill(jet_->etCorr[jetIdx]); jetET180_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) {jetET12_HE1->Fill(jet_->etCorr[jetIdx], nPV);  jetET12_HE->Fill(jet_->etCorr[jetIdx], nPV);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) {jetET35_HE1->Fill(jet_->etCorr[jetIdx], nPV);  jetET35_HE->Fill(jet_->etCorr[jetIdx], nPV);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) {jetET60_HE1->Fill(jet_->etCorr[jetIdx], nPV);  jetET60_HE->Fill(jet_->etCorr[jetIdx], nPV);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) {jetET90_HE1->Fill(jet_->etCorr[jetIdx], nPV);  jetET90_HE->Fill(jet_->etCorr[jetIdx], nPV);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) {jetET120_HE1->Fill(jet_->etCorr[jetIdx], nPV); jetET120_HE->Fill(jet_->etCorr[jetIdx], nPV);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) {jetET180_HE1->Fill(jet_->etCorr[jetIdx], nPV); jetET180_HE->Fill(jet_->etCorr[jetIdx], nPV);}
 
                         } else if (jetEta >= 1.74 && jetEta < 3.0) {
-                            refmJetET_HE2->Fill(jet_->etCorr[jetIdx]);
-                            hresJet_HE2->Fill(jet_->etCorr[jetIdx],resJet);
+                            refmJetET_HE2->Fill(jet_->etCorr[jetIdx], nPV);
+                            hresJet_HE2->Fill(jet_->etCorr[jetIdx],resJet, nPV);
 
-                            refmJetET_HE->Fill(jet_->etCorr[jetIdx]);
-                            hresJet_HE->Fill(jet_->etCorr[jetIdx],resJet);
+                            refmJetET_HE->Fill(jet_->etCorr[jetIdx], nPV);
+                            hresJet_HE->Fill(jet_->etCorr[jetIdx],resJet, nPV);
 
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) {jetET12_HE2->Fill(jet_->etCorr[jetIdx]);  jetET12_HE->Fill(jet_->etCorr[jetIdx]);}
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) {jetET35_HE2->Fill(jet_->etCorr[jetIdx]);  jetET35_HE->Fill(jet_->etCorr[jetIdx]);}
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) {jetET60_HE2->Fill(jet_->etCorr[jetIdx]);  jetET60_HE->Fill(jet_->etCorr[jetIdx]);}
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) {jetET90_HE2->Fill(jet_->etCorr[jetIdx]);  jetET90_HE->Fill(jet_->etCorr[jetIdx]);}
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) {jetET120_HE2->Fill(jet_->etCorr[jetIdx]); jetET120_HE->Fill(jet_->etCorr[jetIdx]);}
-                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) {jetET180_HE2->Fill(jet_->etCorr[jetIdx]); jetET180_HE->Fill(jet_->etCorr[jetIdx]);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[0]) {jetET12_HE2->Fill(jet_->etCorr[jetIdx], nPV);  jetET12_HE->Fill(jet_->etCorr[jetIdx], nPV);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[1]) {jetET35_HE2->Fill(jet_->etCorr[jetIdx], nPV);  jetET35_HE->Fill(jet_->etCorr[jetIdx], nPV);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[2]) {jetET60_HE2->Fill(jet_->etCorr[jetIdx], nPV);  jetET60_HE->Fill(jet_->etCorr[jetIdx], nPV);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[3]) {jetET90_HE2->Fill(jet_->etCorr[jetIdx], nPV);  jetET90_HE->Fill(jet_->etCorr[jetIdx], nPV);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[4]) {jetET120_HE2->Fill(jet_->etCorr[jetIdx], nPV); jetET120_HE->Fill(jet_->etCorr[jetIdx], nPV);}
+                            if (l1emu_->jetEt[l1jetIdx]>jetThresholds[5]) {jetET180_HE2->Fill(jet_->etCorr[jetIdx], nPV); jetET180_HE->Fill(jet_->etCorr[jetIdx], nPV);}
                         }
 
-                        if (jet_->etCorr[jetIdx]<50.) h_resJet1->Fill(resJet);
-                        if (jet_->etCorr[jetIdx]>=50. && jet_->etCorr[jetIdx]<100.) h_resJet2->Fill(resJet);
-                        if (jet_->etCorr[jetIdx]>=100. && jet_->etCorr[jetIdx]<150.) h_resJet3->Fill(resJet);
-                        if (jet_->etCorr[jetIdx]>=150. && jet_->etCorr[jetIdx]<200.) h_resJet4->Fill(resJet);
-                        if (jet_->etCorr[jetIdx]>=200. && jet_->etCorr[jetIdx]<250.) h_resJet5->Fill(resJet);
-                        if (jet_->etCorr[jetIdx]>=250. && jet_->etCorr[jetIdx]<300.) h_resJet6->Fill(resJet);
-                        if (jet_->etCorr[jetIdx]>=300. && jet_->etCorr[jetIdx]<350.) h_resJet7->Fill(resJet);
-                        if (jet_->etCorr[jetIdx]>=350. && jet_->etCorr[jetIdx]<400.) h_resJet8->Fill(resJet);
-                        if (jet_->etCorr[jetIdx]>=400. && jet_->etCorr[jetIdx]<450.) h_resJet9->Fill(resJet);
-                        if (jet_->etCorr[jetIdx]>=450. && jet_->etCorr[jetIdx]<500.) h_resJet10->Fill(resJet);
+                        if (jet_->etCorr[jetIdx]<50.) h_resJet1->Fill(resJet, nPV);
+                        if (jet_->etCorr[jetIdx]>=50. && jet_->etCorr[jetIdx]<100.) h_resJet2->Fill(resJet, nPV);
+                        if (jet_->etCorr[jetIdx]>=100. && jet_->etCorr[jetIdx]<150.) h_resJet3->Fill(resJet, nPV);
+                        if (jet_->etCorr[jetIdx]>=150. && jet_->etCorr[jetIdx]<200.) h_resJet4->Fill(resJet, nPV);
+                        if (jet_->etCorr[jetIdx]>=200. && jet_->etCorr[jetIdx]<250.) h_resJet5->Fill(resJet, nPV);
+                        if (jet_->etCorr[jetIdx]>=250. && jet_->etCorr[jetIdx]<300.) h_resJet6->Fill(resJet, nPV);
+                        if (jet_->etCorr[jetIdx]>=300. && jet_->etCorr[jetIdx]<350.) h_resJet7->Fill(resJet, nPV);
+                        if (jet_->etCorr[jetIdx]>=350. && jet_->etCorr[jetIdx]<400.) h_resJet8->Fill(resJet, nPV);
+                        if (jet_->etCorr[jetIdx]>=400. && jet_->etCorr[jetIdx]<450.) h_resJet9->Fill(resJet, nPV);
+                        if (jet_->etCorr[jetIdx]>=450. && jet_->etCorr[jetIdx]<500.) h_resJet10->Fill(resJet, nPV);
                       
                     } // close 'found matched l1jet'
                 } // close 'at least one offline jet'
@@ -581,15 +638,17 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
         jetET12_HE2->Write(); jetET35_HE2->Write(); jetET60_HE2->Write(); jetET90_HE2->Write(); jetET120_HE2->Write(); jetET180_HE2->Write();
         jetET12_HE->Write(); jetET35_HE->Write(); jetET60_HE->Write(); jetET90_HE->Write(); jetET120_HE->Write(); jetET180_HE->Write();
 
-        refMET->Write();
-        MET_50U->Write(); MET_100U->Write(); MET_120U->Write(); MET_150U->Write();
+        refMET_PF->Write(); refMET_Calo->Write();
+        MET_50U_PF->Write(); MET_100U_PF->Write(); MET_120U_PF->Write(); MET_150U_PF->Write();
+        MET_50U_Calo->Write(); MET_100U_Calo->Write(); MET_120U_Calo->Write(); MET_150U_Calo->Write();
         // resolutions
-        hresMET->Write(); hresJet_Incl->Write();
+        hresMET_PF->Write(); hresMET_Calo->Write(); hresJet_Incl->Write();
         hresJet_HB->Write();
         hresJet_HE1->Write();
         hresJet_HE2->Write();
         hresJet_HE->Write();
-        h_resMET1->Write();h_resMET2->Write();h_resMET3->Write();h_resMET4->Write();h_resMET5->Write();h_resMET6->Write();h_resMET7->Write();h_resMET8->Write();h_resMET9->Write();h_resMET10->Write();
+        h_resMET1_PF->Write();h_resMET2_PF->Write();h_resMET3_PF->Write();h_resMET4_PF->Write();h_resMET5_PF->Write();h_resMET6_PF->Write();h_resMET7_PF->Write();h_resMET8_PF->Write();h_resMET9_PF->Write();h_resMET10_PF->Write();
+        h_resMET1_Calo->Write();h_resMET2_Calo->Write();h_resMET3_Calo->Write();h_resMET4_Calo->Write();h_resMET5_Calo->Write();h_resMET6_Calo->Write();h_resMET7_Calo->Write();h_resMET8_Calo->Write();h_resMET9_Calo->Write();h_resMET10_Calo->Write();
         h_resJet1->Write();h_resJet2->Write();h_resJet3->Write();h_resJet4->Write();h_resJet5->Write();h_resJet6->Write();h_resJet7->Write();h_resJet8->Write();h_resJet9->Write();h_resJet10->Write();
     }
 
