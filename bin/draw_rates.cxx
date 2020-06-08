@@ -12,13 +12,14 @@
 #include <string>
 #include <vector>
 #include <iostream>
-
+#include <boost/algorithm/string/replace.hpp>
 
 int main()
 {
   // include comparisons between HW and data TPs
-  bool includeHW = false;
-  int rebinFactor = 1;
+  bool includeHW = true;
+  int rebinFactor = 2;
+  bool compare_def_hw_only = true;
 
   setTDRStyle();
   gROOT->ForceStyle();
@@ -26,23 +27,28 @@ int main()
   // default, then new conditions
   std::vector<std::string> filenames = {"rates_def.root", "rates_new_cond.root"};
   std::vector<std::string> rateTypes = {"singleJetRates_emu", "doubleJetRates_emu", "tripleJetRates_emu", "quadJetRates_emu",
-					                    "singleEgRates_emu", "singleISOEgRates_emu", "doubleEgRates_emu", "doubleISOEgRates_emu",
-					                    "singleTauRates_emu", "singleISOTauRates_emu", "doubleTauRates_emu", "doubleISOTauRates_emu",
-					                    "htSumRates_emu", "etSumRates_emu", "metSumRates_emu", "metHFSumRates_emu"};
-
+					"singleEgRates_emu", "singleISOEgRates_emu", "doubleEgRates_emu", "doubleISOEgRates_emu",
+					"singleTauRates_emu", "singleISOTauRates_emu", "doubleTauRates_emu", "doubleISOTauRates_emu",
+					"htSumRates_emu", "etSumRates_emu", "metSumRates_emu", "metHFSumRates_emu",
+					"singleJetRates_HB_emu", "singleJetRates_HE1_emu", "singleJetRates_HE2a_emu", "singleJetRates_HE2b_emu", "singleJetRates_HF_emu"};
+  
   std::vector<std::string> sumTypes = {"htSum_emu", "etSum_emu", "metSum_emu", "mhtSum_emu", "metHFSum_emu"};
 
-  std::vector<std::string> puRangeNames = {"_lowPU", "_midPU", "_highPU", ""};
+  //std::vector<std::string> puRangeNames = {"_lowPU", "_midPU", "_highPU", ""};
+  std::vector<std::string> puRangeNames = {""};
 
   std::map<std::string, int> histColor;
 
-  std::vector<std::vector<int> > puRanges = {{30,46}, {47,63}, {64,80}, {0,100}};
+  //std::vector<std::vector<int> > puRanges = {{30,46}, {47,63}, {64,80}, {0,100}};
+  std::vector<std::vector<int> > puRanges = {{0,100}};
 
-  histColor["singleJetRates_emu"] = histColor["singleEgRates_emu"] = histColor["singleTauRates_emu"] = histColor["etSumRates_emu"] = histColor["metSumRates_emu"] = histColor["etSum_emu"] = histColor["metSum_emu"] = histColor["metSumRates_emu"] = kRed;
-  histColor["doubleJetRates_emu"] = histColor["singleISOEgRates_emu"] = histColor["singleISOTauRates_emu"] = histColor["htSumRates_emu"] = histColor["metHFSumRates_emu"] = histColor["htSum_emu"] = histColor["metHFSum_emu"] = histColor["mhtSum_emu"] = kBlue;
-  histColor["tripleJetRates_emu"] = histColor["doubleEgRates_emu"] = histColor["doubleTauRates_emu"] = kGreen;
-  histColor["quadJetRates_emu"] = histColor["doubleISOEgRates_emu"] = histColor["doubleISOTauRates_emu"] = kBlack;
-
+  histColor["singleJetRates_emu"] = histColor["singleEgRates_emu"] = histColor["singleTauRates_emu"] = histColor["etSumRates_emu"] = histColor["metSumRates_emu"] = histColor["etSum_emu"] = histColor["metSum_emu"] = histColor["metSumRates_emu"] = histColor["singleJetRates_HB_emu"] = kRed;
+  histColor["doubleJetRates_emu"] = histColor["singleISOEgRates_emu"] = histColor["singleISOTauRates_emu"] = histColor["htSumRates_emu"] = histColor["metHFSumRates_emu"] = histColor["htSum_emu"] = histColor["metHFSum_emu"] = histColor["mhtSum_emu"] = histColor["singleJetRates_HE1_emu"] = kBlue;
+  histColor["tripleJetRates_emu"] = histColor["doubleEgRates_emu"] = histColor["doubleTauRates_emu"] = histColor["singleJetRates_HE2a_emu"] = kGreen;
+  histColor["quadJetRates_emu"] = histColor["doubleISOEgRates_emu"] = histColor["doubleISOTauRates_emu"] = histColor["singleJetRates_HE2b_emu"] = kBlack;
+  histColor["singleJetRates_HF_emu"] = kOrange;
+  
+  
   std::map<std::string, TH1D*> rateHists_hw;
   std::map<std::string, TH1D*> rateHists_def;
   std::map<std::string, TH1D*> rateHists_new_cond;
@@ -80,7 +86,8 @@ int main()
 
       std::string histName(rateType);
       std::string histNameHw(histName);
-
+      boost::replace_all(histNameHw, "emu", "hw");
+            
       TH2F* deftemp = dynamic_cast<TH2F*>(files.at(0)->Get(histName.c_str()));
       TH2F* newtemp = dynamic_cast<TH2F*>(files.at(1)->Get(histName.c_str()));
       for (unsigned int irange = 0; irange < puRanges.size(); irange++) {
@@ -107,14 +114,13 @@ int main()
 
           if(includeHW) {
             newNameHw += "Rates_hw";
-            TH2F* hwtemp = dynamic_cast<TH2F*>(files.at(0)->Get(histNameHw.c_str()));
-            rateHists_hw[newNameHw] = hwtemp->ProjectionX((newNameHw).c_str(), lowBin, hiBin, "");
-            rateHists_hw[newNameHw]->Rebin(rebinFactor);
-            rateHists_hw[newNameHw]->SetLineColor(histColor[rateType]);
-
-            rateHistsRatio[newNameHw] = dynamic_cast<TH1D*>(rateHists_def[newNameHw]->Clone(name));
-            rateHistsRatio[newNameHw]->Divide(rateHists_hw[newNameHw]);
-          }
+	    TH2F* hwtemp = dynamic_cast<TH2F*>(files.at(0)->Get(histNameHw.c_str()));
+	    rateHists_hw[newName] = hwtemp->ProjectionX((newNameHw).c_str(), lowBin, hiBin, "");
+	    rateHists_hw[newName]->Rebin(rebinFactor);
+	    rateHists_hw[newName]->SetLineColor(histColor[rateType]);
+	    rateHistsRatio[newName] = dynamic_cast<TH1D*>(rateHists_def[newName]->Clone(name));
+	    rateHistsRatio[newName]->Divide(rateHists_hw[newName]); 
+	  }
           else {
             rateHistsRatio[newName] = dynamic_cast<TH1D*>(rateHists_new_cond[newName]->Clone(name));
             rateHistsRatio[newName]->Divide(rateHists_def[newName]);
@@ -135,8 +141,14 @@ int main()
      nameHist.second->SetLineWidth(2);
 
   if (includeHW) {
-     for(auto pair : rateHists_hw) 
-       pair.second->SetLineStyle(kDashed);
+    for(auto pair : rateHists_hw) {
+      if ( ! compare_def_hw_only) {
+	pair.second->SetLineStyle(kDashed);
+      } else {
+	pair.second->SetLineWidth(2);
+      }
+    }
+     
   }
   for(auto sumHist : sumHists_def)
     sumHist.second->SetLineStyle(kDotted);
@@ -149,6 +161,7 @@ int main()
   std::vector<std::string> tauPlots = {"singleTauRates_emu", "singleISOTauRates_emu", "doubleTauRates_emu", "doubleISOTauRates_emu"};
   std::vector<std::string> scalarSumPlots = {"etSumRates_emu", "htSumRates_emu"};
   std::vector<std::string> vectorSumPlots = {"metSumRates_emu", "metHFSumRates_emu"};
+  std::vector<std::string> jetInEtaBinsPlots = {"singleJetRates_HB_emu", "singleJetRates_HE1_emu", "singleJetRates_HE2a_emu", "singleJetRates_HE2b_emu", "singleJetRates_HF_emu"};
 
   std::vector<std::string> sumPlots = {"etSum_emu", "htSum_emu", "mhtSum_emu", "metSum_emu", "metHFSum_emu"};
   std::vector<TCanvas*> canvases;
@@ -163,6 +176,7 @@ int main()
   plots["scalarSumRates_emu"] = scalarSumPlots;
   plots["vectorSumRates_emu"] = vectorSumPlots;
   plots["sums_emu"] = sumPlots;
+  plots["jetRates_InEtaBins_emu"] = jetInEtaBinsPlots;
 
   for(auto iplot : plots["sums_emu"]) {
 
@@ -193,6 +207,7 @@ int main()
       leg->SetBorderSize(0);
       leg->Draw();
 
+      canvases.back()->Print(Form("plots/%s.png", (theName.c_str())));
       canvases.back()->Print(Form("plots/%s.pdf", (theName.c_str())));
     }
   }
@@ -202,6 +217,7 @@ int main()
     if (iplot.first.find("sums") != std::string::npos) { continue; }
 
     for (auto rname : puRangeNames) {
+      std::cout << "histo 1st: " << iplot.second.front()+rname << std::endl;
       canvases.push_back(new TCanvas);
       canvases.back()->SetWindowSize(canvases.back()->GetWw(), 1.3*canvases.back()->GetWh());
       pad1.push_back(new TPad("pad1", "pad1", 0, 0.3, 1, 1));
@@ -215,6 +231,9 @@ int main()
       pad1.back()->cd();
       pad1.back()->SetBottomMargin(0.02); 
       rateHists_def[iplot.second.front()+rname]->GetXaxis()->SetLabelSize(0.0);
+      if (iplot.second.front().find("Rates") != std::string::npos) {
+	rateHists_def[iplot.second.front()+rname]->GetYaxis()->SetTitle("Rate (Hz)");
+      }
       rateHists_def[iplot.second.front()+rname]->Draw("hist");
 
       TLegend *leg = nullptr;
@@ -226,16 +245,16 @@ int main()
       leg->SetNColumns(2);
 
       for(auto hist : iplot.second) {
-
         std::string theName = hist+rname;
+	std::cout << "\t histos: " << theName << std::endl;
         rateHists_def[theName]->Draw("hist same");
         if(includeHW) rateHists_hw[theName]->Draw("hist same");
-        rateHists_new_cond[theName]->Draw("hist same");
+        if ( ! (includeHW && compare_def_hw_only) ) rateHists_new_cond[theName]->Draw("hist same");
         TString name(rateHists_def[theName]->GetName());
 
         leg->AddEntry(rateHists_def[theName], name + " (current)", "L");
         if(includeHW) leg->AddEntry(rateHists_hw[theName], name + " (hw)", "L");
-        leg->AddEntry(rateHists_new_cond[theName], name + " (new)", "L"); 
+        if ( ! (includeHW && compare_def_hw_only) ) leg->AddEntry(rateHists_new_cond[theName], name + " (new)", "L"); 
       }
       leg->SetBorderSize(0);
       leg->Draw();
@@ -265,10 +284,14 @@ int main()
         rateHistsRatio[theName]->Draw("hist same");
       }
 
-      if(includeHW) canvases.back()->Print(Form("plots/%sRates_hw.pdf", (iplot.first+rname).c_str()));
-      else {
-          canvases.back()->Print(Form("plots/%s.pdf", (iplot.first+rname).c_str()));
+      if(includeHW) {
+	canvases.back()->Print(Form("plots/%sRates_hw.png", (iplot.first+rname).c_str()));
+	canvases.back()->Print(Form("plots/%sRates_hw.pdf", (iplot.first+rname).c_str()));
       }
+      else {
+          canvases.back()->Print(Form("plots/%s.png", (iplot.first+rname).c_str()));
+	  canvases.back()->Print(Form("plots/%s.pdf", (iplot.first+rname).c_str()));
+      } 
     }
   }
 

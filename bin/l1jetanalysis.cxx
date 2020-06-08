@@ -20,6 +20,8 @@
 #include "L1Trigger/L1TNtuples/interface/L1AnalysisRecoMuon2DataFormat.h"
 #include "L1Trigger/L1TNtuples/interface/L1AnalysisRecoMetFilterDataFormat.h"
 
+#include "jsoncpp.cpp"
+
 /* TODO: put errors in rates...
 creates the rates and distributions for l1 trigger objects
 How to use:
@@ -32,6 +34,9 @@ Optionally, if you want to rescale to a given instantaneous luminosity:
 2. select whether you rescale to L=1.5e34 (~line606??...) generally have it setup to rescale
 nb: for 2&3 I have provided the info in runInfoForRates.txt
 */
+
+bool toCheckWithJosnFile = true; // check goodLumiSections if not done while producing l1tNtuples
+std::string goodLumiSectionJSONFile = "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/PromptReco/Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt"; // 2018 promptReco
 
 void jetanalysis(bool newConditions, const std::string& inputFileDirectory);
 
@@ -73,6 +78,43 @@ bool isGoodLumiSection(int lumiBlock)
 
     return false;
 }
+
+
+bool isGoodLumiSection(uint runNumber, uint lumiBlock, bool toCheckWithJosnFile)
+{
+  if ( ! toCheckWithJosnFile ) {
+    if (lumiBlock >= 1
+	|| lumiBlock <= 10000) {
+      return true;
+    }
+  }
+
+  //std::cout << "isGoodLumiSection():: runNumber: "<<runNumber<<", lumiBlock: " << lumiBlock << std::endl;
+  bool isGoodLumiSec = false;
+  // Reading JSON file:
+  // Ref: https://en.wikibooks.org/wiki/JsonCpp
+  // Ref to obtain jconcpp.cpp etc: https://github.com/open-source-parsers/jsoncpp/tree/update  
+  std::ifstream fGoodLumiSects(goodLumiSectionJSONFile.c_str(), std::ifstream::binary);
+  Json::Reader reader;
+  Json::Value obj;
+  reader.parse(fGoodLumiSects, obj);
+  std::string sRun=Form("%u",(uint)runNumber);
+  //std::cout << " run : " << sRun << ", size: " << obj[sRun.c_str()].size() << std::endl;
+  for (int iLumiBlock=0; iLumiBlock < (int)obj[sRun.c_str()].size(); iLumiBlock++) {    
+    uint runFirstLumiSec = obj[sRun.c_str()][iLumiBlock][0].asUInt();
+    uint runLastLumiSec  = obj[sRun.c_str()][iLumiBlock][1].asUInt();
+    //std::cout << "iLumiBlock " << iLumiBlock << ", size: " << obj[sRun.c_str()][iLumiBlock].size()
+    //	      << ", lumi [" << runFirstLumiSec << ", " << runLastLumiSec << "]" << std::endl;
+    if (lumiBlock >= runFirstLumiSec  &&  lumiBlock <= runLastLumiSec) {
+      //std::cout <<" GoodLumiSec" << std::endl;
+      isGoodLumiSec = true;
+      break;
+    }
+  }
+  //if ( ! isGoodLumiSec) std::cout <<" noGoodLumiSec" << std::endl;
+  return isGoodLumiSec;
+}
+
 
 double deltaPhi(double phi1, double phi2) {
     double result = phi1 - phi2;
@@ -346,7 +388,7 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
     TH2F *h_resJet9 = new TH2F("hresJet9","",100,-5,5, nPVbins, pvLow, pvHi) ;
     TH2F *h_resJet10 = new TH2F("hresJet10","",100,-5,5, nPVbins, pvLow, pvHi) ;
       
-    // hcal/ecal TPs
+    // hcal/ecal TPs 
     TH2F* hcalTP_emu = new TH2F("hcalTP_emu", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi, nPVbins, pvLow, pvHi);
     TH2F* ecalTP_emu = new TH2F("ecalTP_emu", ";TP E_{T}; # Entries", nTpBins, tpLo, tpHi, nPVbins, pvLow, pvHi);
 
@@ -362,11 +404,15 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
         //lumi break clause
         eventTree->GetEntry(jentry);
         //skip the corresponding event
-        if (!isGoodLumiSection(event_->lumi)) continue;
+        //if (!isGoodLumiSection(event_->lumi)) continue;
+	if (!isGoodLumiSection(event_->run, event_->lumi, toCheckWithJosnFile)) continue;
         goodLumiEventCount++;
 
-        int nPV = event_->nPV_True;
-
+        //int nPV = event_->nPV_True;
+	int nPV = event_->nPV;
+	// nPV for data is not filled in l1t-ntuples
+	if (nPV >99999) nPV = 0;
+	
         // Check for at least one iso muon in the event.
         bool isoMu = false;
         if (recoOn) {
@@ -378,9 +424,9 @@ void jetanalysis(bool newConditions, const std::string& inputFileDirectory){
                     break;
                 }
             }
+	    if (!isoMu && muonTree->GetEntry(jentry)) continue;	    
         }
 
-        if (!isoMu) continue;
 
         //do routine for L1 emulator quantites
         if (emuOn){

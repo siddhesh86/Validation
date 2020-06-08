@@ -45,9 +45,11 @@ int main()
   std::vector<std::string> resTypes = {"hresJet1","hresJet2","hresJet3","hresJet4","hresJet5","hresJet6","hresJet7","hresJet8","hresJet9","hresJet10",
 				       "hresMET1","hresMET2","hresMET3","hresMET4","hresMET5","hresMET6","hresMET7","hresMET8","hresMET9","hresMET10"};
 
-  std::vector<std::string> puRangeNames = {"_lowPU", "_midPU", "_highPU", ""};
+  //std::vector<std::string> puRangeNames = {"_lowPU", "_midPU", "_highPU", ""};
+  std::vector<std::string> puRangeNames = {""};
 
-  std::vector<std::vector<int> > puRanges = {{30,46}, {47,63}, {64,80}, {0,100}};
+  //std::vector<std::vector<int> > puRanges = {{30,46}, {47,63}, {64,80}, {0,100}};
+  std::vector<std::vector<int> > puRanges = {{0,100}};
     
   std::map<std::string, int> histColor;
   histColor["singleJet"] = histColor["etSum"] = histColor["metSum"] = kRed;
@@ -134,7 +136,7 @@ int main()
   // L1 Jet efficiencies
   //-----------------------------------------------------------------------
 
-  int rebinF=5;
+  int rebinF=10;
   
   std::vector<TCanvas*> tcanvases;
   
@@ -218,9 +220,11 @@ int main()
                jetLegend->Draw("SAME");
                jeteffHists_def[newName2]->GetYaxis()->SetTitle("Efficiency");
 
-               tcanvases.back()->Print(Form("plots/%sjetEffs_emu_%s%s_lin.pdf", jetType.c_str(), region.c_str(), custom.c_str()));
+               tcanvases.back()->Print(Form("plots/%sjetEffs_emu_%s%s_lin.png", jetType.c_str(), region.c_str(), custom.c_str()));
+	       tcanvases.back()->Print(Form("plots/%sjetEffs_emu_%s%s_lin.pdf", jetType.c_str(), region.c_str(), custom.c_str()));
                tcanvases.back()->SetLogx();
-               tcanvases.back()->Print(Form("plots/%sjetEffs_emu_%s%s_log.pdf", jetType.c_str(), region.c_str(), custom.c_str()));
+               tcanvases.back()->Print(Form("plots/%sjetEffs_emu_%s%s_log.png", jetType.c_str(), region.c_str(), custom.c_str()));
+	       tcanvases.back()->Print(Form("plots/%sjetEffs_emu_%s%s_log.pdf", jetType.c_str(), region.c_str(), custom.c_str()));
 
           }
       }
@@ -296,9 +300,11 @@ int main()
 
           meteffHists_PF_def[newName]->GetYaxis()->SetTitle("Efficiency");
 
-          tcanvases.back()->Print(Form("plots/%smetEffs%s_emu_lin.pdf", metType.c_str(), custom.c_str()));
+          tcanvases.back()->Print(Form("plots/%smetEffs%s_emu_lin.png", metType.c_str(), custom.c_str()));
+	  tcanvases.back()->Print(Form("plots/%smetEffs%s_emu_lin.pdf", metType.c_str(), custom.c_str()));
           tcanvases.back()->SetLogx();
-          tcanvases.back()->Print(Form("plots/%smetEffs%s_emu_log.pdf", metType.c_str(), custom.c_str()));
+          tcanvases.back()->Print(Form("plots/%smetEffs%s_emu_log.png", metType.c_str(), custom.c_str()));
+	  tcanvases.back()->Print(Form("plots/%smetEffs%s_emu_log.pdf", metType.c_str(), custom.c_str()));
      }
 
   }
@@ -367,9 +373,11 @@ int main()
 
           meteffHists_Calo_def[newName]->GetYaxis()->SetTitle("Efficiency");
 
-          tcanvases.back()->Print(Form("plots/%smetEffs%s_Calo_emu_lin.pdf", metType.c_str(), custom.c_str()));
+          tcanvases.back()->Print(Form("plots/%smetEffs%s_Calo_emu_lin.png", metType.c_str(), custom.c_str()));
+	  tcanvases.back()->Print(Form("plots/%smetEffs%s_Calo_emu_lin.pdf", metType.c_str(), custom.c_str()));
           tcanvases.back()->SetLogx();
-          tcanvases.back()->Print(Form("plots/%smetEffs%s_Calo_emu_log.pdf", metType.c_str(), custom.c_str()));
+          tcanvases.back()->Print(Form("plots/%smetEffs%s_Calo_emu_log.png", metType.c_str(), custom.c_str()));
+	  tcanvases.back()->Print(Form("plots/%smetEffs%s_Calo_emu_log.pdf", metType.c_str(), custom.c_str()));
      }
 
   }
@@ -459,7 +467,8 @@ int main()
           resLegend1->AddEntry(resHistos1D_1_new_cond.back(), "New", "EP");
           resLegend1->Draw("SAME");
 
-          mycanvases_1.back()->Print(Form("plots/%s_emu.pdf", (meanName+custom).c_str()));
+          mycanvases_1.back()->Print(Form("plots/%s_emu.png", (meanName+custom).c_str()));
+	  mycanvases_1.back()->Print(Form("plots/%s_emu.pdf", (meanName+custom).c_str()));
 
           mycanvases_2.push_back(new TCanvas);
           mycanvases_2.back()->SetWindowSize(mycanvases_2.back()->GetWw(), 1.*mycanvases_2.back()->GetWh());
@@ -492,7 +501,8 @@ int main()
           resLegend2->AddEntry(resHistos1D_2_new_cond.back(), "New", "EP");
           resLegend2->Draw("SAME");
 
-          mycanvases_2.back()->Print(Form("plots/%s_emu.pdf", (sigmaName+custom).c_str()));
+          mycanvases_2.back()->Print(Form("plots/%s_emu.png", (sigmaName+custom).c_str()));
+	  mycanvases_2.back()->Print(Form("plots/%s_emu.pdf", (sigmaName+custom).c_str()));
       }
   }
 
@@ -559,6 +569,7 @@ int main()
       resLegend1->AddEntry(resMET_Calo_new_cond_1, "New", "EP");
       resLegend1->Draw("SAME");
 
+      mycanvases2.back()->Print(Form("plots/%s_emu.png", ("resMET_Calo_mean"+custom).c_str()));
       mycanvases2.back()->Print(Form("plots/%s_emu.pdf", ("resMET_Calo_mean"+custom).c_str()));
 
       mycanvases2.push_back(new TCanvas);
@@ -597,6 +608,7 @@ int main()
       resLegend2->AddEntry(resMET_Calo_new_cond_2, "New", "EP");
       resLegend2->Draw("SAME");
 
+      mycanvases2.back()->Print(Form("plots/%s_emu.png", ("resMET_Calo_sigma"+custom).c_str()));
       mycanvases2.back()->Print(Form("plots/%s_emu.pdf", ("resMET_Calo_sigma"+custom).c_str()));
   }
   
@@ -656,6 +668,7 @@ int main()
       resLegend1->AddEntry(resMET_PF_new_cond_1, "New", "EP");
       resLegend1->Draw("SAME");
 
+      mycanvases2.back()->Print(Form("plots/%s_emu.png", ("resMET_PF_mean"+custom).c_str()));
       mycanvases2.back()->Print(Form("plots/%s_emu.pdf", ("resMET_PF_mean"+custom).c_str()));
 
       mycanvases2.push_back(new TCanvas);
@@ -694,6 +707,7 @@ int main()
       resLegend2->AddEntry(resMET_PF_new_cond_2, "New", "EP");
       resLegend2->Draw("SAME");
 
+      mycanvases2.back()->Print(Form("plots/%s_emu.png", ("resMET_PF_sigma"+custom).c_str()));
       mycanvases2.back()->Print(Form("plots/%s_emu.pdf", ("resMET_PF_sigma"+custom).c_str()));
   }
 
@@ -737,7 +751,7 @@ int main()
   //  f2->SetLineColor(kRed);
   //  f2->Draw("SAME");
 
-  //  rcanvases.back()->Print(Form("plots/%sbin_emu.pdf", rType.c_str()));
+  //  rcanvases.back()->Print(Form("plots/%sbin_emu.png", rType.c_str()));
   //  
   //}
   //for(auto pair : resHists_new_cond) pair.second->SetLineWidth(2);
@@ -802,11 +816,11 @@ int main()
   //    effHistsRatio[hist]->Draw("hist same");
   //  }
 
-  //  //if(includeHW) canvases.back()->Print(Form("plots/%s_hw.pdf", iplot.first.c_str()));
+  //  //if(includeHW) canvases.back()->Print(Form("plots/%s_hw.png", iplot.first.c_str()));
   //  //else
   //  canvases.back()->SetLogx();
-  //  canvases.back()->Print(Form("plots/%s_emu.pdf", iplot.first.c_str()));
-  //}
+  //  canvases.back()->Print(Form("plots/%s_emu.png", iplot.first.c_str()));
+  //} 
 
  
 
