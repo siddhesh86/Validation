@@ -15,12 +15,12 @@
 #include <boost/algorithm/string/replace.hpp>
 
 int main()
-{
+{  
   // include comparisons between HW and data TPs
-  bool includeHW = true;
+  bool includeHW = false;   
   int rebinFactor = 2;
   bool compare_def_hw_only = true;
-
+ 
   setTDRStyle();
   gROOT->ForceStyle();
 
@@ -30,23 +30,27 @@ int main()
 					"singleEgRates_emu", "singleISOEgRates_emu", "doubleEgRates_emu", "doubleISOEgRates_emu",
 					"singleTauRates_emu", "singleISOTauRates_emu", "doubleTauRates_emu", "doubleISOTauRates_emu",
 					"htSumRates_emu", "etSumRates_emu", "metSumRates_emu", "metHFSumRates_emu",
-					"singleJetRates_HB_emu", "singleJetRates_HE1_emu", "singleJetRates_HE2a_emu", "singleJetRates_HE2b_emu", "singleJetRates_HF_emu"};
+					"singleJetRates_HB_emu", "singleJetRates_HE1_emu", "singleJetRates_HE2a_emu", "singleJetRates_HE2b_emu", "singleJetRates_HF_emu",
+					"singleJetRates_noPUS_emu", "doubleJetRates_noPUS_emu", "tripleJetRates_noPUS_emu", "quadJetRates_noPUS_emu",
+					"singleJetRates_noPUS_HB_emu", "singleJetRates_noPUS_HE1_emu", "singleJetRates_noPUS_HE2a_emu", "singleJetRates_noPUS_HE2b_emu", "singleJetRates_noPUS_HF_emu",
+  };
   
   std::vector<std::string> sumTypes = {"htSum_emu", "etSum_emu", "metSum_emu", "mhtSum_emu", "metHFSum_emu"};
 
   //std::vector<std::string> puRangeNames = {"_lowPU", "_midPU", "_highPU", ""};
+  //std::vector<std::string> puRangeNames = {"_PU30To46", "_PU47To83", "_PU64To80", "_PU50To100" ""};
   std::vector<std::string> puRangeNames = {""};
 
   std::map<std::string, int> histColor;
 
-  //std::vector<std::vector<int> > puRanges = {{30,46}, {47,63}, {64,80}, {0,100}};
+  //std::vector<std::vector<int> > puRanges = {{30,46},    {47,63},     {64,80},    {50,100},    {0,100}};
   std::vector<std::vector<int> > puRanges = {{0,100}};
 
-  histColor["singleJetRates_emu"] = histColor["singleEgRates_emu"] = histColor["singleTauRates_emu"] = histColor["etSumRates_emu"] = histColor["metSumRates_emu"] = histColor["etSum_emu"] = histColor["metSum_emu"] = histColor["metSumRates_emu"] = histColor["singleJetRates_HB_emu"] = kRed;
-  histColor["doubleJetRates_emu"] = histColor["singleISOEgRates_emu"] = histColor["singleISOTauRates_emu"] = histColor["htSumRates_emu"] = histColor["metHFSumRates_emu"] = histColor["htSum_emu"] = histColor["metHFSum_emu"] = histColor["mhtSum_emu"] = histColor["singleJetRates_HE1_emu"] = kBlue;
-  histColor["tripleJetRates_emu"] = histColor["doubleEgRates_emu"] = histColor["doubleTauRates_emu"] = histColor["singleJetRates_HE2a_emu"] = kGreen;
-  histColor["quadJetRates_emu"] = histColor["doubleISOEgRates_emu"] = histColor["doubleISOTauRates_emu"] = histColor["singleJetRates_HE2b_emu"] = kBlack;
-  histColor["singleJetRates_HF_emu"] = kOrange;
+  histColor["singleJetRates_emu"] = histColor["singleEgRates_emu"] = histColor["singleTauRates_emu"] = histColor["etSumRates_emu"] = histColor["metSumRates_emu"] = histColor["etSum_emu"] = histColor["metSum_emu"] = histColor["metSumRates_emu"] = histColor["singleJetRates_HB_emu"] = histColor["singleJetRates_noPUS_emu"] = histColor["singleJetRates_noPUS_HB_emu"]= kRed;
+  histColor["doubleJetRates_emu"] = histColor["singleISOEgRates_emu"] = histColor["singleISOTauRates_emu"] = histColor["htSumRates_emu"] = histColor["metHFSumRates_emu"] = histColor["htSum_emu"] = histColor["metHFSum_emu"] = histColor["mhtSum_emu"] = histColor["singleJetRates_HE1_emu"] = histColor["doubleJetRates_noPUS_emu"] = histColor["singleJetRates_noPUS_HE1_emu"] = kBlue;
+  histColor["tripleJetRates_emu"] = histColor["doubleEgRates_emu"] = histColor["doubleTauRates_emu"] = histColor["singleJetRates_HE2a_emu"] = histColor["tripleJetRates_noPUS_emu"] = histColor["singleJetRates_noPUS_HE2a_emu"] = kGreen;
+  histColor["quadJetRates_emu"] = histColor["doubleISOEgRates_emu"] = histColor["doubleISOTauRates_emu"] = histColor["singleJetRates_HE2b_emu"] = histColor["quadJetRates_noPUS_emu"] = histColor["singleJetRates_noPUS_HE2b_emu"] = kBlack;
+  histColor["singleJetRates_HF_emu"] = histColor["singleJetRates_noPUS_HF_emu"] = kOrange;
   
   
   std::map<std::string, TH1D*> rateHists_hw;
@@ -71,6 +75,7 @@ int main()
         std::string custom = puRangeNames[irange]; std::vector<int> bounds = puRanges[irange];
 
         std::string newName = histName + custom;
+	std::cout << "sumTypes: " << newName << std::endl;
         int lowBin = deftemp->GetYaxis()->FindBin(bounds[0]); int hiBin = deftemp->GetYaxis()->FindBin(bounds[1]);
         sumHists_def[newName] = deftemp->ProjectionX((newName+"_def").c_str(), lowBin, hiBin, "");
         sumHists_def[newName]->Rebin(10);
@@ -95,6 +100,7 @@ int main()
           std::string custom = puRangeNames[irange]; std::vector<int> bounds = puRanges[irange];
 
           std::string newName = histName + custom; std::string newNameHw = histNameHw + custom;
+	  std::cout << "rateTypes: " << newName << std::endl;
           int lowBin = deftemp->GetYaxis()->FindBin(bounds[0]); int hiBin = deftemp->GetYaxis()->FindBin(bounds[1]);
 
           rateHists_def[newName] = deftemp->ProjectionX((newName+"_def").c_str(), lowBin, hiBin, "");
@@ -130,7 +136,8 @@ int main()
 
           }
           rateHistsRatio[newName]->SetMinimum(0.01);    
-          rateHistsRatio[newName]->SetMaximum(1.39);    
+          //rateHistsRatio[newName]->SetMaximum(1.39);
+	  rateHistsRatio[newName]->SetMaximum(2.0);    
           rateHistsRatio[newName]->SetLineWidth(2);    
 
       }
@@ -162,7 +169,9 @@ int main()
   std::vector<std::string> scalarSumPlots = {"etSumRates_emu", "htSumRates_emu"};
   std::vector<std::string> vectorSumPlots = {"metSumRates_emu", "metHFSumRates_emu"};
   std::vector<std::string> jetInEtaBinsPlots = {"singleJetRates_HB_emu", "singleJetRates_HE1_emu", "singleJetRates_HE2a_emu", "singleJetRates_HE2b_emu", "singleJetRates_HF_emu"};
-
+  std::vector<std::string> jetNoPUSPlots = {"singleJetRates_noPUS_emu", "doubleJetRates_noPUS_emu", "tripleJetRates_noPUS_emu", "quadJetRates_noPUS_emu"};
+  std::vector<std::string> jetNoPUSInEtaBinsPlots = {"singleJetRates_noPUS_HB_emu", "singleJetRates_noPUS_HE1_emu", "singleJetRates_noPUS_HE2a_emu", "singleJetRates_noPUS_HE2b_emu", "singleJetRates_noPUS_HF_emu"};
+  
   std::vector<std::string> sumPlots = {"etSum_emu", "htSum_emu", "mhtSum_emu", "metSum_emu", "metHFSum_emu"};
   std::vector<TCanvas*> canvases;
   std::vector<TPad*> pad0;
@@ -177,7 +186,9 @@ int main()
   plots["vectorSumRates_emu"] = vectorSumPlots;
   plots["sums_emu"] = sumPlots;
   plots["jetRates_InEtaBins_emu"] = jetInEtaBinsPlots;
-
+  plots["jetNoPUSRates_emu"] = jetNoPUSPlots;
+  plots["jetNoPUSRates_InEtaBins_emu"] = jetNoPUSInEtaBinsPlots;
+  
   for(auto iplot : plots["sums_emu"]) {
 
     for (auto rname : puRangeNames) {
@@ -275,6 +286,8 @@ int main()
       rateHistsRatio[iplot.second.front()+rname]->GetYaxis()->SetLabelSize(0.7*yLabSize/0.3);
 
       rateHistsRatio[iplot.second.front()+rname]->GetYaxis()->SetTitleOffset(0.3*yOffSet/0.7);
+
+      rateHistsRatio[iplot.second.front()+rname]->GetYaxis()->SetNdivisions(505);
 
       rateHistsRatio[iplot.second.front()+rname]->Draw("hist");
       if(includeHW) rateHistsRatio[iplot.second.front()+rname]->GetYaxis()->SetTitle("Current/HW");

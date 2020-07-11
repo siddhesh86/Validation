@@ -1,7 +1,7 @@
 // Script for calculating rate histograms
 // Originally from Aaron Bundock
 #include "TMath.h"
-#include "TFile.h"
+#include "TFile.h" 
 #include "TTree.h"
 #include "TH1F.h"
 #include "TH2F.h"
@@ -23,8 +23,12 @@
 //#include <json/json.h>
 //#include "TBufferJSON.h"
 #include "jsoncpp.cpp"
+#include <glob.h> // glob(), globfree()
+#include <vector>
+#include <stdexcept>
+#include <sstream>
 
-/* TODO: put errors in rates...
+/* TODO: put errors in rates... 
 creates the the rates and distributions for l1 trigger objects
 How to use:
 1. input the number of bunches in the run (~line 35)
@@ -35,15 +39,16 @@ Optionally, if you want to rescale to a given instantaneous luminosity:
 1. input the instantaneous luminosity of the run (~line 32) [only if we scale to 2016 nominal]
 2. select whether you rescale to L=1.5e34 (~line606??...) generally have it setup to rescale
 nb: for 2&3 I have provided the info in runInfoForRates.txt
-*/
+*/ 
 
 // configurable parameters
 double numBunch = 2544; //the number of bunches colliding for the run of interest
 double runLum = 0.02; // 0.44: 275783  0.58:  276363 //luminosity of the run of interest (*10^34)
 double expectedLum = 1.15; //expected luminosity of 2016 runs (*10^34)
-bool toCheckWithJosnFile = true; // check goodLumiSections if not done while producing l1tNtuples
+bool toCheckWithJosnFile = false; // check goodLumiSections if not done while producing l1tNtuples
 std::string goodLumiSectionJSONFile = "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/PromptReco/Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt"; // 2018 promptReco
-
+bool isMC = false;
+long l1NTuple_FileSizeThrsh = 0; //45000; // in bytes  
 
 // Run3 LHC parameters for normalizing rates
 double instLumi = 2e34; // Hz/cm^2, https://indico.cern.ch/event/880508/contributions/3720014/attachments/1980197/3297287/CMS-Week_20200203_LHCStatus_Schaumann_v2.pdf
@@ -97,6 +102,7 @@ bool isGoodLumiSection(uint runNumber, uint lumiBlock, bool toCheckWithJosnFile)
 	|| lumiBlock <= 10000) {
       return true;
     }
+    return false;
   }
 
   //std::cout << "isGoodLumiSection():: runNumber: "<<runNumber<<", lumiBlock: " << lumiBlock << std::endl;
@@ -125,8 +131,45 @@ bool isGoodLumiSection(uint runNumber, uint lumiBlock, bool toCheckWithJosnFile)
   return isGoodLumiSec;
 }
 
-void rates(bool newConditions, const std::string& inputFileDirectory){
-  
+std::vector<std::string> glob(const std::string& pattern) {
+    using namespace std;
+
+    // glob struct resides on the stack
+    glob_t glob_result;
+    memset(&glob_result, 0, sizeof(glob_result));
+
+    // do the glob operation
+    int return_value = glob(pattern.c_str(), GLOB_TILDE, NULL, &glob_result);
+    if(return_value != 0) {
+        globfree(&glob_result);
+        stringstream ss;
+        ss << "glob() failed with return_value " << return_value << endl;
+        throw std::runtime_error(ss.str());
+    }
+
+    // collect all the filenames into a std::list<std::string>
+    vector<string> filenames;
+    for(size_t i = 0; i < glob_result.gl_pathc; ++i) {
+        filenames.push_back(string(glob_result.gl_pathv[i]));
+    }
+
+    // cleanup
+    globfree(&glob_result);
+
+    // done
+    return filenames;
+}
+
+long GetFileSize(std::string filename)
+{
+    struct stat stat_buf; 
+    int rc = stat(filename.c_str(), &stat_buf);
+    return rc == 0 ? stat_buf.st_size : -1;
+}
+
+
+void rates(bool newConditions, const std::string& inputFileDirectory){ 
+   
   bool hwOn = true;   //are we using data from hardware? (upgrade trigger had to be running!!!)
   bool emuOn = true;  //are we using data from emulator?
 
@@ -147,6 +190,49 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
   // }
 
 
+  TChain * treeL1emu = new TChain("l1UpgradeEmuTree/L1UpgradeTree");
+  TChain * treeL1hw = new TChain("l1UpgradeTree/L1UpgradeTree");
+  TChain * eventTree = new TChain("l1EventTree/L1EventTree");
+  // TChain * vtxTree = new TChain("l1RecoTree/RecoTree"); // In case you want to include PU info
+  TChain * treeL1TPemu = new TChain("l1CaloTowerEmuTree/L1CaloTowerTree");
+  TChain * treeL1TPhw = new TChain("l1CaloTowerTree/L1CaloTowerTree");
+  
+  std::cout << "i/p trees: " << inputFile << std::endl;
+  std::vector<std::string> vInputFiles = glob(inputFile);
+  std::cout << "no. of files: " << vInputFiles.size();
+  for (size_t i=0; i<vInputFiles.size(); i++) {
+    long fileSize = GetFileSize(vInputFiles[i]);
+    //printf("\t %lu %ld %s\n",i,fileSize,vInputFiles[i].c_str());
+    if (fileSize < l1NTuple_FileSizeThrsh) {
+      //printf("\t\t\t fileSize (%ld) < l1NTuple_FileSizeThrsh (%ld)",fileSize, l1NTuple_FileSizeThrsh);
+      continue;
+    }
+
+    std::string file(vInputFiles[i]);
+    if (emuOn){
+      treeL1emu->Add(file.c_str());
+    }
+    if (hwOn){
+      treeL1hw->Add(file.c_str());
+    }
+    eventTree->Add(file.c_str());
+
+    // In case you want to include PU info
+    // if(binByPileUp){
+    //   vtxTree->Add(file.c_str());
+    // }
+
+    if (emuOn){
+      treeL1TPemu->Add(file.c_str());
+    }
+
+    if (hwOn){
+      treeL1TPhw->Add(file.c_str());
+    }
+    
+  }
+
+  /*
   // make trees
   std::cout << "Loading up the TChain..." << std::endl;
   TChain * treeL1emu = new TChain("l1UpgradeEmuTree/L1UpgradeTree");
@@ -176,7 +262,8 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
   if (hwOn){
     treeL1TPhw->Add(inputFile.c_str());
   }
-
+  */
+  
   L1Analysis::L1AnalysisL1UpgradeDataFormat    *l1emu_ = new L1Analysis::L1AnalysisL1UpgradeDataFormat();
   treeL1emu->SetBranchAddress("L1Upgrade", &l1emu_);
   L1Analysis::L1AnalysisL1UpgradeDataFormat    *l1hw_ = new L1Analysis::L1AnalysisL1UpgradeDataFormat();
@@ -321,7 +408,18 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
     std::string sEtaBin = etaBin.first;
     singleJetRates_etaCat_emu[sEtaBin] = new TH2F(Form("singleJetRates_%s_emu",sEtaBin.c_str()), axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
   }
-    
+
+  TH2F* singleJetRates_noPUS_emu = new TH2F("singleJetRates_noPUS_emu", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+  TH2F* doubleJetRates_noPUS_emu = new TH2F("doubleJetRates_noPUS_emu", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+  TH2F* tripleJetRates_noPUS_emu = new TH2F("tripleJetRates_noPUS_emu", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+  TH2F* quadJetRates_noPUS_emu = new TH2F("quadJetRates_noPUS_emu", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+  
+  std::map<std::string, TH2F*> singleJetRates_noPUS_etaCat_emu;
+  for (auto etaBin : ETA_CAT) {
+    std::string sEtaBin = etaBin.first;
+    singleJetRates_noPUS_etaCat_emu[sEtaBin] = new TH2F(Form("singleJetRates_noPUS_%s_emu",sEtaBin.c_str()), axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+  }
+  
   TH2F* singleJetRates_hw = new TH2F("singleJetRates_hw", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
   TH2F* doubleJetRates_hw = new TH2F("doubleJetRates_hw", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
   TH2F* tripleJetRates_hw = new TH2F("tripleJetRates_hw", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
@@ -352,7 +450,16 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
     singleJetRates_etaCat_hw[sEtaBin] = new TH2F(Form("singleJetRates_%s_hw",sEtaBin.c_str()), axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
   }
 
+  TH2F* singleJetRates_noPUS_hw = new TH2F("singleJetRates_noPUS_hw", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+  TH2F* doubleJetRates_noPUS_hw = new TH2F("doubleJetRates_noPUS_hw", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+  TH2F* tripleJetRates_noPUS_hw = new TH2F("tripleJetRates_noPUS_hw", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+  TH2F* quadJetRates_noPUS_hw = new TH2F("quadJetRates_noPUS_hw", axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
 
+  std::map<std::string, TH2F*> singleJetRates_noPUS_etaCat_hw;
+  for (auto etaBin : ETA_CAT) {
+    std::string sEtaBin = etaBin.first;
+    singleJetRates_noPUS_etaCat_hw[sEtaBin] = new TH2F(Form("singleJetRates_noPUS_%s_hw",sEtaBin.c_str()), axR.c_str(), nJetBins, jetLo, jetHi, nPVbins, pvLow, pvHi);
+  }
   
   /////////////////////////////////
   // loop through all the entries//
@@ -374,12 +481,17 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
       goodLumiEventCount++; 
       
       //int nPV = event_->nPV_True;
-      int nPV = event_->nPV;
+      //int nPV = event_->nPV;
+      int nPV; 
+      if (isMC) nPV = event_->nPV_True;
+      else      nPV = event_->nPV;
       //printf("\nentry %lld: nPV: %i %i",jentry,event_->nPV,event_->nPV_True);
       //std::cout << "entry " << jentry << ": nPV: " << event_->nPV << ", nPT_True: " << event_->nPV_True << std::endl;
 
       // nPV, nPV_True not filled for data
       if (nPV > 10000) nPV = 0;
+
+      //if ( !(nPV > 50.)) continue;
       
       //do routine for L1 emulator quantites
       if (emuOn){
@@ -403,10 +515,18 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
           double jetEt_2 = 0;
           double jetEt_3 = 0;
           double jetEt_4 = 0;
+          double jetEt_1_noPUS = 0;
+          double jetEt_2_noPUS = 0;
+          double jetEt_3_noPUS = 0;
+          double jetEt_4_noPUS = 0;
           if (l1emu_->nJets>0) jetEt_1 = l1emu_->jetEt[0];
           if (l1emu_->nJets>1) jetEt_2 = l1emu_->jetEt[1];
           if (l1emu_->nJets>2) jetEt_3 = l1emu_->jetEt[2];
-          if (l1emu_->nJets>3) jetEt_4 = l1emu_->jetEt[3];
+          if (l1emu_->nJets>3) jetEt_4 = l1emu_->jetEt[3];	  
+          if (l1emu_->nJets>0) jetEt_1_noPUS = l1emu_->jetEt[0] + l1emu_->jetPUEt[0];
+          if (l1emu_->nJets>1) jetEt_2_noPUS = l1emu_->jetEt[1] + l1emu_->jetPUEt[1];
+          if (l1emu_->nJets>2) jetEt_3_noPUS = l1emu_->jetEt[2] + l1emu_->jetPUEt[2];
+          if (l1emu_->nJets>3) jetEt_4_noPUS = l1emu_->jetEt[3] + l1emu_->jetPUEt[3];
 	  double jetEta_1 = 0;
 	  std::vector<std::string> sJetEtaBins_1; // string representing jet1 eta: HB, HE1, HE2a, HE2b, HF, HBEF (all HCAL)
 	  if (l1emu_->nJets>0) jetEta_1 = l1emu_->jetEta[0];
@@ -494,23 +614,38 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
 		singleJetRates_etaCat_emu[sJetEtaBin]->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
 	      }
             }
+            if( (jetEt_1_noPUS ) >= jetLo + (bin*jetBinWidth) ) {
+	      singleJetRates_noPUS_emu->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
+	      for (auto sJetEtaBin : sJetEtaBins_1) {
+		singleJetRates_noPUS_etaCat_emu[sJetEtaBin]->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
+	      }
+            }	    
           }
 
           for(int bin=0; bin<nJetBins; bin++){
             if( (jetEt_2) >= jetLo + (bin*jetBinWidth) ) {
              doubleJetRates_emu->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
             }
+            if( (jetEt_2_noPUS) >= jetLo + (bin*jetBinWidth) ) {
+             doubleJetRates_noPUS_emu->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
+            }	    
           }  
 
           for(int bin=0; bin<nJetBins; bin++){
             if( (jetEt_3) >= jetLo + (bin*jetBinWidth) ) {
                 tripleJetRates_emu->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
             }
+	    if( (jetEt_3_noPUS) >= jetLo + (bin*jetBinWidth) ) {
+                tripleJetRates_noPUS_emu->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
+            }
           }  
 
           for(int bin=0; bin<nJetBins; bin++){
             if( (jetEt_4) >= jetLo + (bin*jetBinWidth) ) {
                 quadJetRates_emu->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
+            }
+	    if( (jetEt_4_noPUS) >= jetLo + (bin*jetBinWidth) ) {
+                quadJetRates_noPUS_emu->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
             }
           }  
                  
@@ -609,6 +744,10 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
       double jetEt_2 = 0;
       double jetEt_3 = 0;
       double jetEt_4 = 0;
+      double jetEt_1_noPUS = 0;
+      double jetEt_2_noPUS = 0;
+      double jetEt_3_noPUS = 0;
+      double jetEt_4_noPUS = 0;
       double jetEta_1 = 99999.; 
       for (UInt_t c=0; c<l1hw_->nJets; c++){
         if (l1hw_->jetBx[c]==0 && l1hw_->jetEt[c] > jetEt_1){
@@ -616,19 +755,34 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
           jetEt_3 = jetEt_2;
           jetEt_2 = jetEt_1;
           jetEt_1 = l1hw_->jetEt[c];
+
+	  jetEt_4_noPUS = jetEt_3_noPUS;
+          jetEt_3_noPUS = jetEt_2_noPUS;
+          jetEt_2_noPUS = jetEt_1_noPUS;
+	  jetEt_1_noPUS = l1hw_->jetEt[c] + l1hw_->jetPUEt[c];
+	  
 	  jetEta_1 = l1hw_->jetEta[c];
         }
         else if (l1hw_->jetBx[c]==0 && l1hw_->jetEt[c] <= jetEt_1 && l1hw_->jetEt[c] > jetEt_2){
           jetEt_4 = jetEt_3;
           jetEt_3 = jetEt_2;      
           jetEt_2 = l1hw_->jetEt[c];
+
+	  jetEt_4_noPUS = jetEt_3_noPUS;
+          jetEt_3_noPUS = jetEt_2_noPUS;      
+          jetEt_2_noPUS = l1hw_->jetEt[c] + l1hw_->jetPUEt[c];
         }
         else if (l1hw_->jetBx[c]==0 && l1hw_->jetEt[c] <= jetEt_2 && l1hw_->jetEt[c] > jetEt_3){
           jetEt_4 = jetEt_3;     
           jetEt_3 = l1hw_->jetEt[c];
+
+	  jetEt_4_noPUS = jetEt_3_noPUS;     
+          jetEt_3_noPUS = l1hw_->jetEt[c] + l1hw_->jetPUEt[c];
         }
         else if (l1hw_->jetBx[c]==0 && l1hw_->jetEt[c] <= jetEt_3 && l1hw_->jetEt[c] > jetEt_4){   
           jetEt_4 = l1hw_->jetEt[c];
+
+	  jetEt_4_noPUS = l1hw_->jetEt[c] + l1hw_->jetPUEt[c];
         }
       }
       std::vector<std::string> sJetEtaBins_1; // string representing jet1 eta: HB, HE1, HE2a, HE2b, HF, HBEF (all HCAL)
@@ -711,18 +865,27 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
 	    singleJetRates_etaCat_hw[sJetEtaBin]->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
 	  }
 	}
+	if( (jetEt_1_noPUS) >= jetLo + (bin*jetBinWidth) ) {
+	  singleJetRates_noPUS_hw->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
+	  for (auto sJetEtaBin : sJetEtaBins_1) {
+	    singleJetRates_noPUS_etaCat_hw[sJetEtaBin]->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
+	  }
+	}
       } 
 
       for(int bin=0; bin<nJetBins; bin++){
         if( (jetEt_2) >= jetLo + (bin*jetBinWidth) ) doubleJetRates_hw->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
+	if( (jetEt_2_noPUS) >= jetLo + (bin*jetBinWidth) ) doubleJetRates_noPUS_hw->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
       }  
 
       for(int bin=0; bin<nJetBins; bin++){
         if( (jetEt_3) >= jetLo + (bin*jetBinWidth) ) tripleJetRates_hw->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
+	if( (jetEt_3_noPUS) >= jetLo + (bin*jetBinWidth) ) tripleJetRates_noPUS_hw->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
       }  
 
       for(int bin=0; bin<nJetBins; bin++){
         if( (jetEt_4) >= jetLo + (bin*jetBinWidth) ) quadJetRates_hw->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
+	if( (jetEt_4_noPUS) >= jetLo + (bin*jetBinWidth) ) quadJetRates_noPUS_hw->Fill(jetLo+(bin*jetBinWidth),nPV);  //GeV
       }  
              
       for(int bin=0; bin<nEgBins; bin++){
@@ -787,7 +950,7 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
   //  double norm = 11246*(numBunch/goodLumiEventCount)*(expectedLum/runLum); //scale to nominal lumi
   //  Run3 normalization ==> inst lumi * min bias xsec / <PU>
   double norm = instLumi * mbXSec / nentries;
-  if (toCheckWithJosnFile) norm = instLumi * mbXSec / goodLumiEventCount;
+  /*if (toCheckWithJosnFile)*/ norm = instLumi * mbXSec / goodLumiEventCount;
   
   if (emuOn){
     singleJetRates_emu->Scale(norm);
@@ -810,6 +973,14 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
     for (auto etaBin : ETA_CAT) {
       std::string sEtaBin = etaBin.first;
       singleJetRates_etaCat_emu[sEtaBin]->Scale(norm);
+    }
+    singleJetRates_noPUS_emu->Scale(norm);
+    doubleJetRates_noPUS_emu->Scale(norm);
+    tripleJetRates_noPUS_emu->Scale(norm);
+    quadJetRates_noPUS_emu->Scale(norm);
+    for (auto etaBin : ETA_CAT) {
+      std::string sEtaBin = etaBin.first;
+      singleJetRates_noPUS_etaCat_emu[sEtaBin]->Scale(norm);
     }
 
     htSum_emu->Write();
@@ -846,7 +1017,16 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
     for (auto etaBin : ETA_CAT) {
       std::string sEtaBin = etaBin.first;
       singleJetRates_etaCat_emu[sEtaBin]->Write();
-    }    
+    }
+
+    singleJetRates_noPUS_emu->Write();
+    doubleJetRates_noPUS_emu->Write();
+    tripleJetRates_noPUS_emu->Write();
+    quadJetRates_noPUS_emu->Write();
+    for (auto etaBin : ETA_CAT) {
+      std::string sEtaBin = etaBin.first;
+      singleJetRates_noPUS_etaCat_emu[sEtaBin]->Write();
+    }
   }
 
   if (hwOn){
@@ -872,6 +1052,14 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
       std::string sEtaBin = etaBin.first;
       singleJetRates_etaCat_hw[sEtaBin]->Scale(norm);
     }
+    singleJetRates_noPUS_hw->Scale(norm);
+    doubleJetRates_noPUS_hw->Scale(norm);
+    tripleJetRates_noPUS_hw->Scale(norm);
+    quadJetRates_noPUS_hw->Scale(norm);
+    for (auto etaBin : ETA_CAT) {
+      std::string sEtaBin = etaBin.first;
+      singleJetRates_noPUS_etaCat_hw[sEtaBin]->Scale(norm);
+    }
     
     hcalTP_hw->Write();
     ecalTP_hw->Write();
@@ -896,6 +1084,14 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
       std::string sEtaBin = etaBin.first;
       singleJetRates_etaCat_hw[sEtaBin]->Write();
     }
+    singleJetRates_noPUS_hw->Write();
+    doubleJetRates_noPUS_hw->Write();
+    tripleJetRates_noPUS_hw->Write();
+    quadJetRates_noPUS_hw->Write();
+    for (auto etaBin : ETA_CAT) {
+      std::string sEtaBin = etaBin.first;
+      singleJetRates_noPUS_etaCat_hw[sEtaBin]->Write();
+    }
   }
   myfile << "using the following ntuple: " << inputFile << std::endl;
   myfile << "number of colliding bunches = " << numBunch << std::endl;
@@ -904,7 +1100,7 @@ void rates(bool newConditions, const std::string& inputFileDirectory){
   myfile << "norm factor used = " << norm << std::endl;
   myfile << "number of total events = " << nentries << std::endl;  
   myfile << "number of good events = " << goodLumiEventCount << std::endl;
-  myfile.close();
+  myfile.close();  
 
   printf("\nDetails wrote to %s file\n",outputTxtFilename.c_str());
 }//closes the function 'rates'

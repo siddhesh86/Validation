@@ -5,5 +5,7 @@
   <bin file="rates.cxx" name="rates.exe"/>
   <bin file="draw_l1analysis.cxx" name="draw_l1analysis.exe"/>
   <bin file="l1jetanalysis.cxx" name="l1jetanalysis.exe"/>
+  <bin file="doCaloTPStudy.cxx" name="doCaloTPStudy.exe"/>
+  <bin file="draw_CaloTpStudy.cxx" name="draw_CaloTpStudy.exe"/> 
 </environment>
 <flags CXXFLAGS="-Wall -Werror -g"/>

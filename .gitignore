@@ -5,3 +5,6 @@ ntuple_maker_def.py
 submit_run_def.py
 **Run**
 **condor
+scripts/ntuple_maker_new_cond.py
+scripts/submit_jobs_test1.py
+scripts/submit_run_new_cond.py
